@@ -1,0 +1,8 @@
+python-dotenv
+pg8000
+pytest
+pytest-testdox
+boto3
+moto[all]
+pandas
+numpy
