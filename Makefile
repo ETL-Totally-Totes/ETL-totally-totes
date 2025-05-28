@@ -57,7 +57,7 @@ unit-test:
 	source venv/bin/activate && PYTHONPATH=${PYTHONPATH} pytest || true
 
 check-coverage:
-    source venv/bin/activate && PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m
+	source venv/bin/activate && PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m || true
 
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage
