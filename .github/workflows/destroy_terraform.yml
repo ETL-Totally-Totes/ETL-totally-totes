@@ -1,0 +1,45 @@
+name: destroy-iac-infrastructure
+
+on:
+    workflow_dispatch:
+        inputs: 
+            approve-destroy:
+                description: "Allow infrastructure to be destroyed"
+                required: true
+                default: "no"
+                type: choice
+                options:
+                    - "yes"
+                    - "no"
+
+
+jobs:
+    destroy-infrastructure:
+        name: destroy-infrastructure
+        if: ${{ github.event.inputs.approve-destroy == 'yes' }}
+        runs-on: ubuntu-latest
+        environment: dev
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4.1.0
+              with: 
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ secrets.AWS_REGION }}
+
+            - name: Install Terraform
+              uses: hashicorp/setup-terraform@v3
+
+            - name: Terraform Init
+              working-directory: terraform
+              run: terraform init
+              
+            - name: destroy-infrastructure
+              working-directory: terraform
+              run: terraform destroy -auto-approve
+
+
+        
