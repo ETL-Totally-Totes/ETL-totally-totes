@@ -56,15 +56,11 @@ run-black:
 unit-test:
 	source venv/bin/activate && PYTHONPATH=${PYTHONPATH} pytest || true
 
-## Run the coverage check
-# check-coverage:
-# 	source venv/bin/activate && pytest --cov=src tests/ || true
-
-# check-coverage:
-#     $(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
+check-coverage:
+    source venv/bin/activate && PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m
 
 ## Run all checks
-run-checks: security-test run-black unit-test #check-coverage
+run-checks: security-test run-black unit-test check-coverage
 
 ## Run everything
 run-all: requirements dev-setup run-checks
