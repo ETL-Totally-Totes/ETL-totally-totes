@@ -1,4 +1,4 @@
-from pg8000.native import Connection
+import psycopg2 
 from dotenv import load_dotenv
 import os
 
@@ -11,14 +11,14 @@ def create_connection():
     password = os.environ["PG_PASSWORD"]
     host = os.environ["PG_HOST"]
 
-    con = Connection(
-        username,
-        database=database,
-        password=password,
-        host=host,
-        port=5432
-    )
-    return con
+    db = psycopg2.connect(
+            database="totesys",
+            user="project_team_06",
+            password="fZUyorR8LdL8uBU",
+            host="nc-data-eng-totesys-production.chpsczt8h1nu.eu-west-2.rds.amazonaws.com",
+        )
+    return db
 
-def close_connection(con):
-    con.close()
+def close_connection(db):
+    db.close()
+
