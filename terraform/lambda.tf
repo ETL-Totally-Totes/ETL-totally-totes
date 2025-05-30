@@ -36,5 +36,4 @@ resource "aws_lambda_function" "extract_handler" {
       S3_BUCKET_NAME = var.code_bucket_name
     }
   }
-
 }
