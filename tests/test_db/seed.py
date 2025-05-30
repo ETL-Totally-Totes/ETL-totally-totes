@@ -1,25 +1,25 @@
-# from src.utils.connection import create_connection
+from src.utils.connection import pg8000_connect_to_local, close_connection
 import json
 import os
 from dotenv import load_dotenv
-from pg8000.native import Connection
+
 
 # TO DO: add correct credentials for docker container... secrets?
 
-def connect_to_db(env):
-    load_dotenv(env, override=True)
-    return Connection(
-        user=os.getenv("PG_USERNAME"),
-        database=os.getenv("PG_DATABASE"),
-        password=os.getenv("PG_PASSWORD"),
-        host=os.getenv("PG_HOST"),
-        port=int(os.getenv("PG_PORT"))
-    )
+# def connect_to_db(env):
+#     load_dotenv(env, override=True)
+#     return Connection(
+#         user=os.getenv("TEST_PG_USERNAME"),
+#         database=os.getenv("TEST_PG_DATABASE"),
+#         password=os.getenv("TEST_PG_PASSWORD"),
+#         # host=os.getenv("TEST_PG_HOST"),
+#         port=int(os.getenv("TEST_PG_PORT"))
+#     )
 
-def seed_db(env):
+def seed_db():
     print("\U0001FAB4", "Seeding Database...")
 
-    db = connect_to_db(env)
+    db = pg8000_connect_to_local()
     table_list = [
         "address",
         "counterparty",
@@ -189,7 +189,7 @@ def seed_db(env):
         """
     )
 
-    with open(f'tests/test-db/data/address.json', 'r') as file:
+    with open(f'tests/test_db/data/address.json', 'r') as file:
         ADDRESS_DATA = json.load(file)
         ROWS = ADDRESS_DATA['address']
         row_count = 0
@@ -234,7 +234,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/counterparty.json', 'r') as file:
+    with open(f'tests/test_db/data/counterparty.json', 'r') as file:
         COUNTERPARTY_DATA = json.load(file)
         ROWS = COUNTERPARTY_DATA['counterparty']
         row_count = 0
@@ -270,7 +270,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/currency.json', 'r') as file:
+    with open(f'tests/test_db/data/currency.json', 'r') as file:
         CURRENCY_DATA = json.load(file)
         ROWS = CURRENCY_DATA['currency']
         row_count = 0
@@ -297,7 +297,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/department.json', 'r') as file:
+    with open(f'tests/test_db/data/department.json', 'r') as file:
         DEPARTMENT_DATA = json.load(file)
         ROWS = DEPARTMENT_DATA['department']
         row_count = 0
@@ -330,7 +330,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/design.json', 'r') as file:
+    with open(f'tests/test_db/data/design.json', 'r') as file:
         DESIGN_DATA = json.load(file)
         ROWS = DESIGN_DATA['design']
         row_count = 0
@@ -363,7 +363,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/payment_type.json', 'r') as file:
+    with open(f'tests/test_db/data/payment_type.json', 'r') as file:
         PAYMENT_TYPE_DATA = json.load(file)
         ROWS = PAYMENT_TYPE_DATA['payment_type']
         row_count = 0
@@ -390,7 +390,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/staff.json', 'r') as file:
+    with open(f'tests/test_db/data/staff.json', 'r') as file:
         STAFF_DATA = json.load(file)
         ROWS = STAFF_DATA['staff']
         row_count = 0
@@ -426,7 +426,7 @@ def seed_db(env):
             )
             row_count += 1 
 
-    with open(f'tests/test-db/data/purchase_order.json', 'r') as file:
+    with open(f'tests/test_db/data/purchase_order.json', 'r') as file:
         PURCHASE_ORDER_DATA = json.load(file)
         ROWS = PURCHASE_ORDER_DATA['purchase_order']
         row_count = 0
@@ -477,7 +477,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/transaction.json', 'r') as file:
+    with open(f'tests/test_db/data/transaction.json', 'r') as file:
         TRANSACTION_DATA = json.load(file)
         ROWS = TRANSACTION_DATA['transaction']
         row_count = 0
@@ -510,7 +510,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/payment.json', 'r') as file:
+    with open(f'tests/test_db/data/payment.json', 'r') as file:
         PAYMENT_DATA = json.load(file)
         ROWS = PAYMENT_DATA['payment']
         row_count = 0
@@ -561,7 +561,7 @@ def seed_db(env):
             )
             row_count += 1
 
-    with open(f'tests/test-db/data/sales_order.json', 'r') as file:
+    with open(f'tests/test_db/data/sales_order.json', 'r') as file:
         SALES_ORDER_DATA = json.load(file)
         ROWS = SALES_ORDER_DATA['sales_order']
         row_count = 0

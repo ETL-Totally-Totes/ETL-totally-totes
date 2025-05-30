@@ -1,9 +1,9 @@
 from seed import seed_db
 
-env = '.env.dev'
+env = '.env'
 
 try:
-    seed_db(env)
+    seed_db()
 except Exception as e:
     print(e)
-    raise e
+    # raise e
