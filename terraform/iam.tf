@@ -89,6 +89,61 @@ resource "aws_iam_role_policy_attachment" "lambda_cw_policy_attachment" {
   policy_arn =  aws_iam_policy.cw_policy.arn
 }
 
+
+# ------------------------------
+# Lambda IAM Policy for SNS
+# ------------------------------
+
+# Define
+
+data "aws_iam_policy_document" "sns_topic_document" {
+  statement {
+    actions = [
+      "SNS:Subscribe",
+      "SNS:SetTopicAttributes",
+      "SNS:RemovePermission",
+      "SNS:Receive",
+      "SNS:Publish",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:GetTopicAttributes",
+      "SNS:DeleteTopic",
+      "SNS:AddPermission",
+    ]
+
+    # condition {
+    #   test     = "StringEquals"
+    #   variable = "AWS:SourceOwner"
+
+    #   values = [
+    #     var.account-id,
+    #   ]
+    # }
+
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
+
+  }
+}
+
+# Create
+resource "aws_iam_policy" "sns_topic_policy" {
+  #TODO: use the policy document defined above
+  policy      = data.aws_iam_policy_document.sns_topic_document.json
+  #data.aws_iam_policy_document.sns_topic_document.json
+}
+# Attach
+resource "aws_iam_role_policy_attachment" "lambda_sns_topic_policy_attachment" {
+  #TODO: attach the cw policy to the lambda role
+  role = aws_iam_role.lambda_role.name 
+  policy_arn =  aws_iam_policy.cw_policy.arn
+}
+
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
