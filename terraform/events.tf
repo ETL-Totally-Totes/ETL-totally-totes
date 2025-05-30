@@ -1,3 +1,5 @@
+#TODO: handle any changes to Lambda code after initial deployment
+
 #CloudWatch event to run our extract_lambda every 10 minutes
 
 resource "aws_lambda_permission" "allow_scheduler" {
@@ -45,17 +47,35 @@ resource "aws_sns_topic" "extract_errors_alert" {
   name = "extract-error-alerts-topic"
 }
 
-# resource "aws_sqs_queue" "extract_errors_queue" {
-#   name   = "extract-error-alerts-queue"
-#   policy = data.aws_iam_policy_document.lambda_sns_topic_policy_attachment.json
-# }
-
-resource "aws_sns_topic_subscription" "extract_errors_alert_email_target" {
-  topic_arn = aws_sns_topic.extract_errors_alert.arn   #aws_sns_topic.user_updates.arn
+resource "aws_sns_topic_subscription" "email_4" {
+  topic_arn = aws_sns_topic.extract_errors_alert.arn  
   protocol  = "email"
   endpoint  = "selva.pla.roj@gmail.com"
 }
 
+resource "aws_sns_topic_subscription" "email_1" {
+  topic_arn = aws_sns_topic.extract_errors_alert.arn
+  protocol  = "email"
+  endpoint  = "smorton@gmx.co.uk"
+}
+
+resource "aws_sns_topic_subscription" "email_2" {
+  topic_arn = aws_sns_topic.extract_errors_alert.arn
+  protocol  = "email"
+  endpoint  = "george.krokos1@gmail.com"
+}
+
+resource "aws_sns_topic_subscription" "email_3" {
+  topic_arn = aws_sns_topic.extract_errors_alert.arn
+  protocol  = "email"
+  endpoint  = "abbyadjei9@gmail.com"
+}
+
+resource "aws_sns_topic_subscription" "email_5" {
+  topic_arn = aws_sns_topic.extract_errors_alert.arn
+  protocol  = "email"
+  endpoint  = "dalewithvan@gmail.com"
+}
 # data "aws_iam_policy_document" "sqs_queue_policy" {
   
 #   statement {
