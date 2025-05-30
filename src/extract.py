@@ -1,11 +1,12 @@
 import datetime
 import logging
+from pprint import pprint
 import pandas as pd
 import boto3
 from botocore.exceptions import ClientError
 import psycopg2
 from src.utils.utils import get_state, change_state
-from utils.connection import create_connection, close_connection
+from src.utils.connection import create_connection, close_connection
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,6 +18,7 @@ def lambda_extract_handler(event, context):
     current_state = get_state(boto3.client('s3')) #checks if it is the first run- returns bool
     try:
         db = create_connection()
+        print(db)
         table_list = [
             "address",
             "counterparty",
@@ -34,19 +36,22 @@ def lambda_extract_handler(event, context):
         
         for table in table_list:
             query = f"SELECT * FROM {table}" + (condition if current_state is False else "")
-            db.execute(query)
-            data_frame = pd.DataFrame.from_records(db.fetchall())
-
+            db_cursor = db.cursor()
+            db_cursor.execute(query)
+            # pprint(db_cursor.fetchall())
+            data_frame = pd.DataFrame.from_records(db_cursor.fetchall())
             if data_frame.shape[0]:
-                bucket = BUCKET # TODO:make dynamic
 
                 csv_file_name_key = f"{table}_{datetime.datetime.now(datetime.UTC)}.csv"
-                csv_file_name = f"s3://{bucket}/{csv_file_name_key}"
+                csv_file_name = f"s3://{BUCKET}/{csv_file_name_key}"
 
+                pprint(data_frame.head())
+                
                 data_frame.to_csv(
                     csv_file_name, index=False
                 )  # index=False means no dataframe index written in
 
+                print(f"Data exported to '{csv_file_name}' successfully.")
                 logger.info(f"Data exported to '{csv_file_name}' successfully.")
             else:
                 logger.info(f"No data changes in the table {table}")
@@ -73,3 +78,5 @@ def lambda_extract_handler(event, context):
     finally:
         close_connection(db)
 
+if __name__ == "__main__":
+    lambda_extract_handler(None, None)

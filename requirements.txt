@@ -3,7 +3,7 @@ pg8000
 pytest
 pytest-testdox
 boto3
-botocore=1.38.25
+botocore==1.38.25
 moto[all]
 pandas
 numpy
