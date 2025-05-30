@@ -20,10 +20,12 @@ resource "aws_s3_object" "extract_function" {
   bucket = var.code_bucket_name
   key    = "extract_function.zip"
   source = "${path.module}/../extract_function.zip"
+  etag   = filemd5(data.archive_file.extract_lambda.output_path)
 }
 
 resource "aws_s3_object" "layer" {
   bucket = var.code_bucket_name
   key    = "layer.zip"
   source = "${path.module}/../layer.zip"
+  etag   = filemd5(data.archive_file.layer.output_path)
 }
