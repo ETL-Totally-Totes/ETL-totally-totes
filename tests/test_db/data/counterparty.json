@@ -1,0 +1,49 @@
+{
+    "counterparty": [
+        {
+            "counterparty_id": 1,
+            "counterparty_legal_name": "Fahey and Sons",
+            "legal_address_id": 15,
+            "commercial_contact": "Micheal Toy",
+            "delivery_contact": "Mrs. Lucy Runolfsdottir",
+            "created_at": "2022-11-03T14:20:51.563000",
+            "last_updated": "2022-11-03T14:20:51.563000"
+        },
+        {
+            "counterparty_id": 2,
+            "counterparty_legal_name": "Leannon, Predovic and Morar",
+            "legal_address_id": 28,
+            "commercial_contact": "Melba Sanford",
+            "delivery_contact": "Jean Hane III",
+            "created_at": "2022-11-03T14:20:51.563000",
+            "last_updated": "2022-11-03T14:20:51.563000"
+        },
+        {
+            "counterparty_id": 3,
+            "counterparty_legal_name": "Armstrong Inc",
+            "legal_address_id": 2,
+            "commercial_contact": "Jane Wiza",
+            "delivery_contact": "Myra Kovacek",
+            "created_at": "2022-11-03T14:20:51.563000",
+            "last_updated": "2022-11-03T14:20:51.563000"
+        },
+        {
+            "counterparty_id": 4,
+            "counterparty_legal_name": "Kohler Inc",
+            "legal_address_id": 29,
+            "commercial_contact": "Taylor Haag",
+            "delivery_contact": "Alfredo Cassin II",
+            "created_at": "2022-11-03T14:20:51.563000",
+            "last_updated": "2022-11-03T14:20:51.563000"
+        },
+        {
+            "counterparty_id": 5,
+            "counterparty_legal_name": "Frami, Yundt and Macejkovic",
+            "legal_address_id": 22,
+            "commercial_contact": "Homer Mitchell",
+            "delivery_contact": "Ivan Balistreri",
+            "created_at": "2022-11-03T14:20:51.563000",
+            "last_updated": "2022-11-03T14:20:51.563000"
+        }
+    ]
+}
