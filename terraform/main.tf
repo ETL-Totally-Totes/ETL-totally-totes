@@ -21,7 +21,7 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket = "etl-totally-totes-backend"
-    key    = "terraform/terraform.tfstate"
+    key    = "terraform/.terraform/terraform.tfstate"
     region = "eu-west-2"
   }
 }
