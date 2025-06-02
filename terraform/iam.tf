@@ -122,11 +122,6 @@ data "aws_iam_policy_document" "sns_topic_document" {
 
     effect = "Allow"
 
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
 
   }
