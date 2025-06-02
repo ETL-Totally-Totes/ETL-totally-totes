@@ -29,3 +29,10 @@ resource "aws_s3_object" "layer" {
   source = "${path.module}/../layer.zip"
   etag   = filemd5(data.archive_file.layer.output_path)
 }
+
+resource "aws_s3_object" "utils" {
+  bucket = var.code_bucket_name
+  key    = "utils.zip"
+  source = "${path.module}/../python/src/utils.zip"
+  etag   = filemd5(data.archive_file.utils.output_path)
+}
