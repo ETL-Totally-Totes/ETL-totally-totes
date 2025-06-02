@@ -39,30 +39,6 @@
             "manager": "Jordan Belfort",
             "created_at": "2022-11-03T14:20:49.962000",
             "last_updated": "2022-11-03T14:20:49.962000"
-        },
-        {
-            "department_id": 6,
-            "department_name": "Facilities",
-            "location": "Manchester",
-            "manager": "Shelley Levene",
-            "created_at": "2022-11-03T14:20:49.962000",
-            "last_updated": "2022-11-03T14:20:49.962000"
-        },
-        {
-            "department_id": 7,
-            "department_name": "Communications",
-            "location": "Leeds",
-            "manager": "Ann Blake",
-            "created_at": "2022-11-03T14:20:49.962000",
-            "last_updated": "2022-11-03T14:20:49.962000"
-        },
-        {
-            "department_id": 8,
-            "department_name": "HR",
-            "location": "Leeds",
-            "manager": "James Link",
-            "created_at": "2022-11-03T14:20:49.962000",
-            "last_updated": "2022-11-03T14:20:49.962000"
         }
     ]
 }
