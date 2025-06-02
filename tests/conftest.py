@@ -1,11 +1,15 @@
 import os
+import psycopg2
 import pytest
+from psycopg2.extras import RealDictCursor
+
 from moto import mock_aws
 import boto3
 from unittest.mock import Mock, patch
 from src.extract import BUCKET
 from tests.test_db.seed import seed_db
 from src.utils.connection import create_connection_to_local
+
 
 #######################
 # AWS MOCKING
@@ -57,6 +61,9 @@ def seed_database():
     except Exception as e:
         print(e)
 
+##########################
+# MOCKS AND PATCHES
+##########################
 
 @pytest.fixture()
 def mock_get_state_true():
