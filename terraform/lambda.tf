@@ -5,35 +5,37 @@ data "archive_file" "extract_lambda" {
   output_path      = "${path.module}/../extract_function.zip"
 }
 
-resource "null_resource" "set_up_zips" {
-    provisioner "local-exec" {
-      command = <<EOT
-        echo "Cleaning up..."
-        rm -rf ${path.module}/../python 
-        rm -rf ${path.module}/../util_layer.zip
-        rm -rf ${path.module}/../layer.zip
+# resource "null_resource" "set_up_zips" {
+#     provisioner "local-exec" {
+#       command = <<EOT
+#         cd ../
+#         echo "Cleaning up..."
+#         rm -rf python 
+#         rm -rf util_layer.zip
+#         rm -rf layer.zip
 
-        echo "Creating dependencies"
-        cd ../
-        pip install -r requirements.txt --platform manylinux2014_x86_64 --only-binary=:all: -t python/
-        zip -r layer.zip python/
+#         echo "Creating dependencies"
+#         pip install -r requirements.txt --platform manylinux2014_x86_64 --only-binary=:all: -t python/
+#         zip -r layer.zip python/
 
-        rm -rf ${path.module}/../python 
+#         rm -rf python 
 
-        echo "Creating utils"
-        mkdir python
-        cp -r src python
-        zip -r util_layer.zip python
-      EOT
-    }
-}
+#         echo "Creating utils"
+#         mkdir python
+#         cp -r src python
+#         zip -r util_layer.zip python
+#         cd terraform
+#       EOT
+#     }
+# }
+
 
 resource "aws_lambda_layer_version" "etl_layer" {
   layer_name          = "etl_layer"
   compatible_runtimes = [var.python_runtime]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "layer.zip"
-  depends_on = [ aws_s3_object.layer, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
 }
 
 resource "aws_lambda_layer_version" "utils" {
@@ -41,7 +43,7 @@ resource "aws_lambda_layer_version" "utils" {
   compatible_runtimes = [var.python_runtime]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "utils.zip"
-  depends_on = [ aws_s3_object.utils, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.utils]#, null_resource.set_up_zips ]
 }
 
 resource "aws_lambda_function" "extract_handler" {
@@ -58,11 +60,11 @@ resource "aws_lambda_function" "extract_handler" {
   layers = [aws_lambda_layer_version.etl_layer.arn, aws_lambda_layer_version.utils.arn]
   environment {
     variables = {
-      BUCKET = var.code_bucket_name
-      PG_USERNAME=jsondecode(data.aws_secretsmanager_secret_version.database_secret["username"]),
-      PG_DATABASE=jsondecode(data.aws_secretsmanager_secret_version.database_secret["database"]),
-      PG_PASSWORD=jsondecode(data.aws_secretsmanager_secret_version.database_secret["password"]),
-      PG_HOST=jsondecode(data.aws_secretsmanager_secret_version.database_secret["host"])
+      BUCKET = var.ingestion_bucket_name
+      PG_USERNAME=jsondecode(data.aws_secretsmanager_secret_version.database_secret.secret_string)["username"],
+      PG_DATABASE=jsondecode(data.aws_secretsmanager_secret_version.database_secret.secret_string)["database"],
+      PG_PASSWORD=jsondecode(data.aws_secretsmanager_secret_version.database_secret.secret_string)["password"],
+      PG_HOST=jsondecode(data.aws_secretsmanager_secret_version.database_secret.secret_string)["host"]
     }
   }
 }
