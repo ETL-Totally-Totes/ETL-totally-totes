@@ -124,37 +124,37 @@ data "aws_region" "current" {}
 #-----------------
 # state machine
 #-----------------
-data "aws_iam_policy_document" "state_policy" {
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["states.amazonaws.com"]
-    }
-    actions = ["sts:AssumeRole"]
-  }
-}
-resource "aws_iam_role" "state_role" {
-  name = "state_role"
-  assume_role_policy = data.aws_iam_policy_document.state_policy.json
-}
-data "aws_iam_policy_document" "state_machine_role_policy" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "lambda:InvokeFunction"
-    ]
-    resources = ["${aws_lambda_function.extract_lamba_handler.arn}:*"]
-  }
-}
-#TODO:add other lambdas
-# Create
-resource "aws_iam_policy" "state_machine_role_policy" {
-  name = "state_machine_role_policy"
-  policy      = data.aws_iam_policy_document.state_machine_role_policy.json
-}
-# Attach
-resource "aws_iam_role_policy_attachment" "state_machine_attachment" {
-    role = aws_iam_role.lambda_role.name #TODO: attach the s3 write policy to the lambda role
-    policy_arn =  aws_iam_policy.state_machine_role_policy.arn
-}
+# data "aws_iam_policy_document" "state_policy" {
+#   statement {
+#     effect = "Allow"
+#     principals {
+#       type        = "Service"
+#       identifiers = ["states.amazonaws.com"]
+#     }
+#     actions = ["sts:AssumeRole"]
+#   }
+# }
+# resource "aws_iam_role" "state_role" {
+#   name = "state_role"
+#   assume_role_policy = data.aws_iam_policy_document.state_policy.json
+# }
+# data "aws_iam_policy_document" "state_machine_role_policy" {
+#   statement {
+#     effect = "Allow"
+#     actions = [
+#       "lambda:InvokeFunction"
+#     ]
+#     resources = ["${aws_lambda_function.extract_lamba_handler.arn}:*"]
+#   }
+# }
+# #TODO:add other lambdas
+# # Create
+# resource "aws_iam_policy" "state_machine_role_policy" {
+#   name = "state_machine_role_policy"
+#   policy      = data.aws_iam_policy_document.state_machine_role_policy.json
+# }
+# # Attach
+# resource "aws_iam_role_policy_attachment" "state_machine_attachment" {
+#     role = aws_iam_role.lambda_role.name #TODO: attach the s3 write policy to the lambda role
+#     policy_arn =  aws_iam_policy.state_machine_role_policy.arn
+# }
