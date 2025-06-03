@@ -12,4 +12,4 @@ echo "Creating utils"
 mkdir python
 cp -r src python
 zip -r util_layer.zip python
-cd terraform
+rm -rf python
