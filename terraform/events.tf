@@ -14,7 +14,7 @@ resource "aws_cloudwatch_event_rule" "scheduler" {
   name_prefix = "extract_handler-scheduler"
   schedule_expression = "rate(10 minutes)"
 }
-resource "aws_cloudwatch_event_target" "yada" {
+resource "aws_cloudwatch_event_target" "extract_scheduler" {
   rule      = aws_cloudwatch_event_rule.scheduler.name
   arn       = aws_lambda_function.extract_handler.arn
 }
@@ -33,11 +33,11 @@ resource "aws_cloudwatch_log_metric_filter" "extract_lambda_error" {
   }
 }
 #AWS SFN Machine
-resource "aws_sfn_state_machine" "sfn_state_machine" {
-  name     = "my-state-machine"
-  role_arn = aws_iam_role.state_role.arn
-  definition = templatefile("${path.module}/aws_sfn.json",{})
-  }
+# resource "aws_sfn_state_machine" "sfn_state_machine" {
+#   name     = "my-state-machine"
+#   role_arn = aws_iam_role.state_role.arn
+#   definition = templatefile("${path.module}/aws_sfn.json",{})
+#   }
 #SNS alert
 resource "aws_sns_topic" "extract_errors_alert" {
   name = "extract-error-alerts-topic"
