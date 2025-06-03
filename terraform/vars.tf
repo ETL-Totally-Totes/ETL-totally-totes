@@ -1,11 +1,11 @@
 variable "ingestion_bucket_name" {
   type    = string
-  default = "totally-totes-ingestion"
+  default = "our-totally-totes-ingestion"
 }
 
 variable "code_bucket_name" {
   type    = string
-  default = "totally-totes-code-src"
+  default = "our-totally-totes-code-src"
 }
 
 variable "extract_lambda_name" {
