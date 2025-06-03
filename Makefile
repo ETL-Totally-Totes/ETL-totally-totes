@@ -26,6 +26,7 @@ set-pythonpath:
 ## Build the environment requirements
 requirements: create-environment
 	source venv/bin/activate && pip install -r requirements.txt
+	source venv/bin/activate && pip install -r requirements-dev.txt
 
 ################################################################################################################
 # Set Up
