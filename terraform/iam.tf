@@ -92,21 +92,16 @@ data "aws_iam_policy_document" "sns_topic_document" {
       "SNS:DeleteTopic",
       "SNS:AddPermission",
     ]
-    # condition {
-    #   test     = "StringEquals"
-    #   variable = "AWS:SourceOwner"
-    #   values = [
-    #     var.account-id,
-    #   ]
-    # }
+
     effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
+
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
   }
 }
+
+# -----------------
+# SNS
+# -----------------
 # Create
 resource "aws_iam_policy" "sns_topic_policy" {
   #TODO: use the policy document defined above
@@ -119,11 +114,27 @@ resource "aws_iam_role_policy_attachment" "lambda_sns_topic_policy_attachment" {
   role = aws_iam_role.lambda_role.name
   policy_arn =  aws_iam_policy.cw_policy.arn
 }
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
-#-----------------
+
+data "aws_iam_policy_document" "sqs_queue_policy" {
+  statement {
+    sid    = "extract_errors_alert_email_target"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
+    }
+    actions = [
+      "SQS:SendMessage",
+    ]
+    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
+  }
+}
+
+
+# -----------------
 # state machine
-#-----------------
+# -----------------
+
 # data "aws_iam_policy_document" "state_policy" {
 #   statement {
 #     effect = "Allow"
@@ -146,9 +157,10 @@ data "aws_region" "current" {}
 #     ]
 #     resources = ["${aws_lambda_function.extract_lamba_handler.arn}:*"]
 #   }
-# }
-# #TODO:add other lambdas
-# # Create
+# 
+
+
+
 # resource "aws_iam_policy" "state_machine_role_policy" {
 #   name = "state_machine_role_policy"
 #   policy      = data.aws_iam_policy_document.state_machine_role_policy.json
@@ -158,3 +170,6 @@ data "aws_region" "current" {}
 #     role = aws_iam_role.lambda_role.name #TODO: attach the s3 write policy to the lambda role
 #     policy_arn =  aws_iam_policy.state_machine_role_policy.arn
 # }
+
+#TODO:add other lambdas
+# Create
