@@ -8,11 +8,16 @@ import boto3
 from botocore.exceptions import ClientError
 import psycopg2
 from src.utils.connection import create_connection, close_connection
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-BUCKET = "abby-test-bucket-test"
+BUCKET = os.environ['BUCKET']
 STATUS_KEY = "status_check.json"
 
 
