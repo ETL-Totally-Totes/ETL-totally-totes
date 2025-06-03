@@ -1,5 +1,6 @@
 #!/bin/bash
 
+pip install --upgrade pip
 echo "Cleaning up..."
 rm -rf python 
 rm -rf util_layer.zip
