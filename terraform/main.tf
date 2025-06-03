@@ -20,8 +20,12 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    bucket = "etl-totally-totes-backend"
+    bucket = "our-etl-totally-totes-backend"
     key    = "terraform/.terraform/terraform.tfstate"
     region = "eu-west-2"
   }
 }
+
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
