@@ -27,12 +27,13 @@ resource "aws_s3_object" "layer" {
   bucket = var.code_bucket_name
   key    = "layer.zip"
   source = "${path.module}/../layer.zip"
-  etag   = filemd5(data.archive_file.layer.output_path)
+  etag   = filebase64sha256("${path.module}/../layer.zip")
 }
 
 resource "aws_s3_object" "utils" {
   bucket = var.code_bucket_name
   key    = "utils.zip"
-  source = "${path.module}/../python/src/utils.zip"
-  etag   = filemd5(data.archive_file.utils.output_path)
+  source = "${path.module}/../util_layer.zip"
+  etag   = filebase64sha256("${path.module}/../util_layer.zip")
+
 }
