@@ -1,5 +1,4 @@
 python-dotenv
 pg8000
-boto3
 pandas
 psycopg2-binary
