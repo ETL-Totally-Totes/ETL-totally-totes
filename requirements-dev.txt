@@ -2,3 +2,4 @@ pytest
 pytest-testdox
 moto[all]
 boto3
+pandas
