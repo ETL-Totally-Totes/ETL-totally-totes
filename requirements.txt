@@ -1,3 +1,4 @@
 python-dotenv
 pg8000
 psycopg2-binary
+pandas
