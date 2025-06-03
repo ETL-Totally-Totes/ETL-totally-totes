@@ -58,8 +58,8 @@ resource "aws_lambda_function" "extract_handler" {
 
   runtime = "python3.13"
   layers = [aws_lambda_layer_version.etl_layer.arn, 
-            aws_lambda_layer_version.utils.arn,
-            "arn:aws:lambda:eu-west-2:770693421928:layer:Klayers-p312-pandas:17"]
+            aws_lambda_layer_version.utils.arn]
+            
   environment {
     variables = {
       BUCKET = var.ingestion_bucket_name

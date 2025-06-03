@@ -81,9 +81,6 @@ jobs:
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Create zip files
-        run: ./make_zip.sh
-
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
