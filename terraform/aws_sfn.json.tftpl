@@ -1,0 +1,29 @@
+{
+    "Comment": "Orchestrates the flow of the ETL pipeline by calling each lambda in the prescribed order",
+    "StartAt": "Lambda Invoke",
+    "States": {
+      "Lambda Invoke": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:eu-west-2:function:extract_lambda_handler",
+        "Arguments": {
+          "FunctionName": "extract_lambda_handler",
+          "Payload": "$"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException",
+              "Lambda.TooManyRequestsException"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 3,
+            "BackoffRate": 2,
+            "JitterStrategy": "FULL"
+          }
+        ],
+        "End": true
+      }
+    }
+  }
