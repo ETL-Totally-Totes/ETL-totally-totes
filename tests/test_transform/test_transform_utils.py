@@ -25,15 +25,38 @@ class TestReadCsvToDf:
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
     )
         s3_client.put_object(Bucket=self.TEST_BUCKET, Key="test_object_1.csv", Body=self.CSV_1)
-        s3_client.put_object(Bucket=self.TEST_BUCKET, Key="test_object_2.csv", Body=self.CSV_2)
         test_list = ['test_object_1.csv']
         result = read_csv_to_df(test_list, s3_client, self.TEST_BUCKET)
         expected_df = pd.DataFrame({'address_id':[1],'address_line_1':['6826 Herzog Via'],'address_line_2':['Avon']})
-        expected = {test_list[0]:expected_df}
         final = next(result)
         compare_dfs : pd.DataFrame = final[test_list[0]].compare(expected_df)
-        
+
         assert compare_dfs.shape[0] == 0
         assert compare_dfs.shape == (0,0)
+        assert final[test_list[0]].empty is not True
         
-    
+    def test_multiple_key_list_yields_multiple_dfs(self, aws_credentials):
+        s3_client = boto3.client('s3', region_name="eu-west-2")
+        s3_client.create_bucket(
+        Bucket=self.TEST_BUCKET,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
+    )
+        s3_client.put_object(Bucket=self.TEST_BUCKET, Key="test_object_1.csv", Body=self.CSV_1)
+        s3_client.put_object(Bucket=self.TEST_BUCKET, Key="test_object_2.csv", Body=self.CSV_2)
+        test_list = ['test_object_1.csv','test_object_2.csv']
+        result = read_csv_to_df(test_list, s3_client, self.TEST_BUCKET)
+        result_list = list(result)
+        print(result_list)
+        print(len(result_list))
+        final_1 = result_list[0]
+        final_2 = result_list[1]
+        expected_df_1 = pd.DataFrame({'address_id':[1],'address_line_1':['6826 Herzog Via'],'address_line_2':['Avon']})
+        expected_df_2 = pd.DataFrame({'address2_id':[1],'address2_line_1':['12 Gold Close'],'address_line2_2':['Harlow']})
+        # expected_1 = {test_list[0]:expected_df_1}
+        # expected_2 = {test_list[1]:expected_df_2}
+
+        assert len(result_list) == 2
+        assert final_1["test_object_1.csv"].size == 3
+        assert final_2["test_object_2.csv"].size == 3
+        assert final_1["test_object_1.csv"].empty is not True
+        assert final_2["test_object_2.csv"].empty is not True
