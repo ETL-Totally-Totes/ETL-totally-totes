@@ -7,9 +7,9 @@ from moto import mock_aws
 import boto3
 from unittest.mock import Mock, patch
 from src.extract import BUCKET
+from src.transform import TRANSFORM_BUCKET
 from tests.test_db.seed import seed_db
 from src.utils.connection import create_connection_to_local
-
 
 #######################
 # AWS MOCKING
@@ -48,6 +48,21 @@ def s3_with_bucket(s3_client):
         Bucket=BUCKET,
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
     )
+    yield s3_client
+
+
+@pytest.fixture(scope="function")
+def s3_with_transform_bucket(s3_client):
+    """Yields a mocked s3 client with a transform bucket
+
+    Args:
+        s3_client: mocked s3 client
+
+    """
+    s3_client.create_bucket(
+        Bucket=TRANSFORM_BUCKET,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
+    )   
     yield s3_client
 
 

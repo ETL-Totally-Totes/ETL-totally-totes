@@ -57,3 +57,48 @@ class TestGetCSVFileKeys:
         get_csv_file_keys(42)
         with caplog.at_level(logging.INFO):
             assert "unexpected error occured" in caplog.text
+
+
+@patch("src.transform.get_logs", None)
+@patch("src.transform.get_csv_file_keys", None)
+class TestTransformHandler:
+
+    def test_uploads_a_parquet_buffer_to_s3(self, s3_client, s3_with_transform_bucket):
+        # patch get_logs and get_csv_file_keys to return NOne. This might not be necessary
+        # patch read_csv_to_df and create a new df for that return value
+        pass
+
+
+    def test_migrates_all_data_on_first_invocation(self, s):
+        # Might need to test last
+        # Put 2 csvs in the mocked bucket, and ensure they're moved
+        pass
+
+    @pytest.mark.it("function migrates at least one table on subsequent invocations inclduing sales")
+    def test_subsequent_runs_inc_sales(self):
+        # Put 2 csvs in the mocked bucket, move them
+        # Put another csv after and ensure that it is moved.
+        # Test this for essential tables like sales and non essentials like department.
+        # Assume that for the mvp, dims won't change cause if they do, more logic will be needed.
+        pass
+
+    @pytest.mark.it("function logs that there were no changes for an empty keys list")
+    def test_subsequent_runs_no_changes(self, caplog):
+        # Should log this information
+        pass
+
+
+    def test_handles_sdk_client_error(self, caplog):
+        # Test logs
+        pass
+
+    
+    def test_handles_index_error(self, caplog):
+        pass
+
+
+    def test_handles_potential_unknown_exception(self, caplog):
+        pass
+
+
+
