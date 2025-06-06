@@ -35,6 +35,7 @@ def s3_client(aws_credentials):
         yield boto3.client("s3", region_name="eu-west-2")
 
 
+
 @pytest.fixture(scope="function")
 # @mock_aws
 def s3_with_bucket(s3_client):
@@ -78,6 +79,7 @@ def log_client(aws_credentials):
 ##########################
 
 
+
 @pytest.fixture(autouse=True, scope="module")
 def seed_database():
     # env = ".env"
@@ -87,9 +89,11 @@ def seed_database():
         print(e)
 
 
+
 ##########################
 # MOCKS AND PATCHES
 ##########################
+
 
 
 @pytest.fixture()
@@ -114,6 +118,7 @@ def mock_get_state_false():
     with patch("src.extract.get_state") as mock:
         mock.return_value = False
         yield mock
+
 
 
 @pytest.fixture()
