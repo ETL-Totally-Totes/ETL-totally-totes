@@ -1,12 +1,9 @@
 from moto import mock_aws
-from unittest.mock import patch, Mock, MagicMock
-from src.utils.utils import read_csv_to_df
+from src.utils.utils import read_csv_to_df, df_to_parquet
 import pytest
 import boto3
 import pandas as pd
-import tempfile
 from io import BytesIO
-from botocore.exceptions import ClientError
 import logging
 
 @mock_aws
@@ -84,3 +81,29 @@ class TestReadCsvToDf:
             assert len(result_dfs) == 0
             assert f"The key '{test_list[0]}' does not exist in bucket '{self.TEST_BUCKET}'." in caplog.text
         #assert next(result) == "The key 'xxx.csv' does not exist in bucket 'test_ingestion_bucket'."
+
+class TestDfToParquet:
+    def test_df_to_parquet(self):
+        df_1 = pd.DataFrame(
+            {
+                "address_id": [1],
+                "address_line_1": ["6826 Herzog Via"],
+                "address_line_2": ["Avon"],
+            }
+        )
+        result = df_to_parquet(df_1)
+        assert isinstance(result, bytes)
+    def test_df_is_preserved(self):
+        prev_df = pd.DataFrame(
+            {
+                "address_id": [1],
+                "address_line_1": ["6826 Herzog Via"],
+                "address_line_2": ["Avon"],
+            }
+        )
+        prev_result = df_to_parquet(prev_df)
+        buffer = BytesIO(prev_result)
+        df_read = pd.read_parquet(buffer)
+        pd.testing.assert_frame_equal(
+            prev_df, df_read
+        )  # uses pandas native testing to compare df
