@@ -2,11 +2,9 @@
 #CloudWatch event to run our lambda every 10 minutes
 
 
-# TODO Change to trigger state machine when next lambda is implemented
+## TODO Change to trigger state machine when next lambda is implemented
 
 resource "aws_cloudwatch_event_rule" "scheduler" {
-  #TODO: this should set up a scheduler that will trigger the Lambda every 5 minutes
-  # Careful! other things may need to be set up as well
   name_prefix = "extract_handler-scheduler"
   schedule_expression = "rate(10 minutes)"
 }
@@ -87,13 +85,30 @@ resource "aws_sns_topic_subscription" "email_5" {
   endpoint  = "dalewithvan@gmail.com"
 }
 
+# ------------------------------
+# Tranform lambda tf code
+# ------------------------------
 
+# This will trigget our transform lambda if there is any change in the s3 ingestion bucket DELETE IF YOU WANT!
+resource "aws_lambda_permission" "allow_s3_to_invoke_transform" {
+  statement_id  = "AllowS3ToInvokeTransform"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.transform_handler.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.ingestion_bucket.arn
+  source_account = data.aws_caller_identity.current.account_id 
+}
 
+# Configure S3 Event Notification to trigger the Transform Lambda
+resource "aws_s3_bucket_notification" "trigger_transform_on_extract_completion" {
+  bucket = aws_s3_bucket.ingestion_bucket.id
 
-# # AWS SFN Machine
-# resource "aws_sfn_state_machine" "sfn_state_machine" {
-#   name     = "my-state-machine"
-#   role_arn = aws_iam_role.state_role.arn
-#   definition = templatefile("${path.module}/aws_sfn.json",{})
-#   }
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.transform_handler.arn
+    events              = ["s3:ObjectCreated:*"] 
+  }
+
+  # Ensure the Lambda permission is created before the S3 notification
+  depends_on = [aws_lambda_permission.allow_s3_to_invoke_transform]
+}
 
