@@ -34,10 +34,20 @@ def read_csv_to_df(key_list, s3_client, origin_bucket = BUCKET):
                           "details": e}
                 )
             
+def df_to_parquet(df):
+    buffer = BytesIO()
+    df.to_parquet(buffer)
+    # buffer.getvalue() should retrieve whole value without having to reset position
+    # but if not (in next funct) add buffer.seek(0)
+    buffer_value = buffer.getvalue()  # takes value from the buffer as byte object
+    return buffer_value
+# we can use index=False inside df.to_parquet(buffer) if we don't want to preserve df indices?
+# TODO:check with team
+# TODO:add pyarrow to requirements? needed 'pip install pyarrow' to test
+# if we need to need to read byte object- BytesIO(buffer_value)
+# s3_client.put_object(Bucket=origin_bucket, Key=key, Body=buffer_value)
+# ^^needs key, bucket and client as args
             
-            
-            # print(e)
-            # error_code = e.response['Error']['Code']
-            # if error_code == 'NoSuchKey':
+           
                 
        
