@@ -1,24 +1,25 @@
 import datetime
 import logging
 import os
+import json
 from pprint import pprint
 import boto3
 from botocore.exceptions import ClientError
 import pandas as pd
 from dotenv import load_dotenv
-from src.utils.utils import facts_and_dim
+from src.utils.utils import facts_and_dim, read_csv_to_df, df_to_parquet
 
 
 load_dotenv(override=True)
 
 EXTRACT_BUCKET = os.environ["BUCKET"]
 TRANSFORM_BUCKET = os.environ["TRANSFORM_BUCKET"]
+STATUS_KEY = "transform_status_check.json"
 
 log_client = boto3.client("logs")
 s3_client = boto3.client("s3")
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 table_list = [
@@ -104,24 +105,52 @@ def get_csv_file_keys(logs: list[str]) -> list[str]:
     finally:
         return file_keys
 
-def read_csv_to_df(get_csv_file_keys):
-    """This function reads .csv files from the s3 bucket and transforms them to panda datasets
-    so that we can run queries on the data
-    Args: function retrieving list of strings
-    Return: pd DataFrame
+def get_state(s3_client):
     """
-    # key_list = get_csv_file_keys
-    # s3_client = boto3.client("s3")
-    # # for key in key_list:
-    # response = s3_client.get_object(
-    #     Bucket=EXTRACT_BUCKET,
-    #     Key="2025/06/05/sales_order_2025-06-05 08:36:21.326123+00:00.csv",
-    # )
-    # df = pd.read_csv(io.BytesIO(response.get("Body").read()), index_col=0)
-    # # pprint(df)
-    # key = "2025/06/05/sales_order_2025-06-05 08:36:21.326123+00:00.csv"
-    # # yield {key: df}
-    # yield df
+        Gets the current state of the switch file and returns it.
+        If it is doesn't exist, it means it is the first run and the file does not exist so it is then created.
+    Args:
+        s3_client (boto3 client): s3 client
+
+    Returns:
+        bool: status of the run
+    """    
+    try:
+        response = s3_client.get_object(Bucket=TRANSFORM_BUCKET, Key=STATUS_KEY)
+        data = json.loads(response["Body"].read().decode("utf-8"))
+        return data["is_first_run"]
+    except ClientError as e:
+        # if it is the first run and the file is not there
+        s3_client.put_object(
+            Bucket=TRANSFORM_BUCKET,
+            Key=STATUS_KEY,
+            Body=json.dumps({"is_first_run": True}),
+        )
+        return True
+
+
+def change_state(s3_client, status: bool):
+    """Changes the state of the switch file. 
+       It is changed after the first run only.
+       Any subsequent changes will be done manually incase of any data loss.
+
+    Args:
+        s3_client (boto3 client): s3 client
+        status (bool): status to be applied to the first run
+    Raises:
+        TypeError: Only arguments of type bool accepted
+    """    
+    if isinstance(status, bool):
+        try:
+            s3_client.put_object(
+                Bucket=TRANSFORM_BUCKET,
+                Key=STATUS_KEY,
+                Body=json.dumps({"is_first_run": status}),
+            )
+        except ClientError as e:
+            print(e)
+    else:
+        raise TypeError("Only arguments of type bool accepted")
 
 
 def transform_handler(event, context):
@@ -140,7 +169,9 @@ def transform_handler(event, context):
         if keys:
             dfs = read_csv_to_df(keys)
             address, department = None, None # These are dataframes
+            print(keys)
             for key in keys:
+                print(key)
                 new_df = None
                 prefix = key[11:15]
                 if prefix == "sale":
@@ -166,7 +197,11 @@ def transform_handler(event, context):
                     df = dfs[key]
                     new_df = facts_and_dim["staff_dim"](df, department)
                 else:
-                    df = datetime  # TO DO: We need to find a way to make the state persist
+                    current_state = get_state(s3_client)
+                    if current_state:
+                        new_df = facts_and_dim["date_dim"]
+                        change_state(s3_client, False)
+                        
                 df_buffer = df_to_parquet(new_df)
                 current_time = datetime.datetime.now(datetime.UTC)
                 year = current_time.strftime("%Y")
@@ -182,6 +217,12 @@ def transform_handler(event, context):
                 )
 
                 logger.info(f"Data exported to '{parquet_file_key}' successfully.")
+            else:
+                logger.error(
+                    {
+                        "message": "no data was exported during this execution",
+                    }
+                )
     except ClientError as e:
         logger.error(
             {
@@ -206,8 +247,8 @@ if __name__ == "__main__":
     df = read_csv_to_df(file_keys)
     next = next(df)
     pprint(next)
-    sales_fact = create_sales_fact(next)
-    pprint(sales_fact)
+    # sales_fact = create_sales_fact(next)
+    # pprint(sales_fact)
     # for k, v in df.items():
     #     print(k)
     #     print(v)

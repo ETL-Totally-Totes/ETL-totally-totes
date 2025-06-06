@@ -20,7 +20,6 @@ logger.setLevel(logging.INFO)
 BUCKET = os.environ['BUCKET']
 STATUS_KEY = "status_check.json"
 
-
 def get_state(s3_client):
     """
         Gets the current state of the switch file and returns it.

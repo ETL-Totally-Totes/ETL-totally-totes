@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import psycopg2
 import pytest
 from psycopg2.extras import RealDictCursor
@@ -145,6 +146,37 @@ def mock_connection():
         mock.return_value = new_conn
         yield mock.return_value
 
+@pytest.fixture()
+def test_df():
+    test_dict = {
+        "index": [1],
+        "created_at": ["2025-06-04"],
+        "last_updated": ["2025-06-06"],
+        "result": ["it works"],
+    }
+    test_df = pd.DataFrame.from_dict(test_dict)
+    test_df.set_index("index", inplace=True)
+    yield test_df
+
+
+
+@pytest.fixture()
+def mock_get_logs():
+    with patch("src.transform.get_logs") as mock:
+        mock.return_value = None
+        yield mock
+
+@pytest.fixture()
+def mock_get_csv_file_keys():
+    with patch("src.transform.get_csv_file_keys") as mock:
+        mock.return_value = ["2025/06/05/design.csv"]
+        yield mock
+
+@pytest.fixture()
+def mock_read_csv_to_df(test_df):
+    with patch("src.transform.read_csv_to_df") as mock:
+        mock.return_value = {"2025/06/05/design.csv": test_df}
+        yield mock
 
 @pytest.fixture()
 def logs_no_changes():
