@@ -1,19 +1,16 @@
 import io
 import json
 import logging
-import os
 import datetime
 from pprint import pprint
 import time
 import pandas as pd
 import pytest
 from moto import mock_aws
-import boto3
 from psycopg2.errors import ConnectionException, OperationalError
 from botocore.exceptions import ClientError
 from unittest.mock import Mock, patch
 
-import s3fs
 from src.extract import extract_handler, BUCKET
 from src.utils.connection import create_connection_to_local, pg8000_connect_to_local
 
