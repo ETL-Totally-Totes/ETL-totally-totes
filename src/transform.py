@@ -1,6 +1,4 @@
 import datetime
-import io
-import json
 import logging
 import os
 from pprint import pprint
@@ -10,25 +8,18 @@ import pandas as pd
 from dotenv import load_dotenv
 from src.utils.utils import facts_and_dim
 
-# Get logs from extract function
-# Get key out of log message
-# Get object(s) out of CSV bucket
-# Convert CSV to dataframe (Saffi & Selva)
-# Merge dataframes         >> utils?
-# Convert to parquet files
-# Put parquet files into S3 processed bucket
-
-# Send logs to Cloudwatch
-#
 
 load_dotenv(override=True)
+
+EXTRACT_BUCKET = os.environ["BUCKET"]
+TRANSFORM_BUCKET = os.environ["TRANSFORM_BUCKET"]
+
 log_client = boto3.client("logs")
 s3_client = boto3.client("s3")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-EXTRACT_BUCKET = os.environ["BUCKET"]
 
 table_list = [
     "address",
@@ -41,15 +32,17 @@ table_list = [
 ]
 
 
-def get_logs(log_client, log_group_name) -> list[str]:
+def get_logs(log_client: boto3.client, log_group_name: str) -> list[str]:
     """Function to extract logs
 
     Args:
         log_client (boto3 client): log client
+        log_group_name: str
 
     Returns:
         list[str]: List of raw log messages
     """
+    logs = []
     try:
         describe_stream_response = log_client.describe_log_streams(
             logGroupName=log_group_name,
@@ -64,8 +57,6 @@ def get_logs(log_client, log_group_name) -> list[str]:
             logStreamName=log_stream,
         )
         logs = [record["message"] for record in log_event_response["events"]]
-        return logs
-
     except ClientError as e:
         logger.error(
             {
@@ -74,6 +65,8 @@ def get_logs(log_client, log_group_name) -> list[str]:
                 "details": e.response["Error"]["Message"],
             }
         )
+    finally:
+        return logs
 
 
 def get_csv_file_keys(logs: list[str]) -> list[str]:
@@ -85,8 +78,8 @@ def get_csv_file_keys(logs: list[str]) -> list[str]:
     Returns:
         list[str]: List of file S3 keys
     """
+    file_keys = []
     try:
-        file_keys = []
         for log in logs:
             if not log.startswith("[INFO]") or "successfully" not in log:
                 continue
@@ -100,8 +93,6 @@ def get_csv_file_keys(logs: list[str]) -> list[str]:
                     day = date[2][:2]
                     actual_s3_key = year + "/" + month + "/" + day + "/" + s3_key
                     file_keys.append(actual_s3_key)
-        # print(file_keys)
-        return file_keys
 
     except Exception as e:
         logger.error(
@@ -110,7 +101,8 @@ def get_csv_file_keys(logs: list[str]) -> list[str]:
                 "details": e,
             }
         )
-
+    finally:
+        return file_keys
 
 def read_csv_to_df(get_csv_file_keys):
     """This function reads .csv files from the s3 bucket and transforms them to panda datasets
@@ -131,39 +123,82 @@ def read_csv_to_df(get_csv_file_keys):
     # # yield {key: df}
     # yield df
 
+
 def transform_handler(event, context):
+    """
+    Reads logs from the latest log stream from the extract lambda to get the most recent CSV file keys.
+    Transform the OLTP data changes to a parquet file.
+    Loads parquet files in to 'processed' S3 bucket.
+
+    Args:
+        event (JSON | dict): returned data from the extract lambda. 
+        context (JSON | dict): contains information about this lambda 
+    """    
     logs = get_logs(log_client, log_group_name=event["log_group_name"])
-    keys= get_csv_file_keys(logs)
-    if keys:
-        dfs = read_csv_to_df(keys)
-        address, department = None, None
-        for key in keys:
-            prefix = key[11:15]
-            if prefix == "sale":
-                df = dfs[key]
-                new_df = facts_and_dim["sales_fact"](df)
-            elif prefix == "addr":
-                df = dfs[key]
-                address = df
-                new_df = facts_and_dim["address_dim"](address)
-            elif prefix == "coun":
-                df = dfs[key]
-                new_df = facts_and_dim["counterparty_dim"](df, address)
-            elif prefix == "curr":
-                df = dfs[key]
-                new_df = facts_and_dim["currency_dim"](df)
-            elif prefix == "depa":
-                df = dfs[key]
-                department = df
-            elif prefix == "desi":
-                df = dfs[key]
-                new_df = facts_and_dim["design_dim"](df)
-            elif prefix == "staf":
-                df = dfs[key]
-                new_df = facts_and_dim["staff_dim"](df, department)
-            else:
-                df = datetime  # TO DO: We need to find a way to make the state persist
- 
+    keys = get_csv_file_keys(logs)
+    try:
+        if keys:
+            dfs = read_csv_to_df(keys)
+            address, department = None, None # These are dataframes
+            for key in keys:
+                new_df = None
+                prefix = key[11:15]
+                if prefix == "sale":
+                    df = dfs[key]
+                    new_df = facts_and_dim["sales_fact"](df)
+                elif prefix == "addr":
+                    df = dfs[key]
+                    address = df
+                    new_df = facts_and_dim["address_dim"](address)
+                elif prefix == "coun":
+                    df = dfs[key]
+                    new_df = facts_and_dim["counterparty_dim"](df, address)
+                elif prefix == "curr":
+                    df = dfs[key]
+                    new_df = facts_and_dim["currency_dim"](df)
+                elif prefix == "depa":
+                    df = dfs[key]
+                    department = df
+                elif prefix == "desi":
+                    df = dfs[key]
+                    new_df = facts_and_dim["design_dim"](df)
+                elif prefix == "staf":
+                    df = dfs[key]
+                    new_df = facts_and_dim["staff_dim"](df, department)
+                else:
+                    df = datetime  # TO DO: We need to find a way to make the state persist
+                df_buffer = df_to_parquet(new_df)
+                current_time = datetime.datetime.now(datetime.UTC)
+                year = current_time.strftime("%Y")
+                month = current_time.strftime("%m")
+                day = current_time.strftime("%d")
+
+                parquet_file_key = (
+                    f"{year}/{month}/{day}/{prefix}_{current_time}.parquet"
+                )
+
+                s3_client.put_object(
+                    Bucket=TRANSFORM_BUCKET, Key=parquet_file_key, Body=df_buffer
+                )
+
+                logger.info(f"Data exported to '{parquet_file_key}' successfully.")
+    except ClientError as e:
+        logger.error(
+            {
+                "message": "an error occured with s3",
+                "error_code": e.response["Error"]["Code"],
+                "details": e.response["Error"]["Message"],
+            }
+        )
+    except IndexError as e:
+        logger.error(
+            {
+                "message": "no data was exported during this execution",
+            }
+        )
+    except Exception as e:
+        logger.error({"message": "unknown error occured", "details": e})
+
 
 if __name__ == "__main__":
     x = get_logs(log_client, "/aws/lambda/extract_handler")

@@ -86,6 +86,6 @@ facts_and_dim = {
     "currency_dim": create_currency_dim,
     "date_dim": create_date_dim,
     "design_dim": create_design_dim,
-    "location_dim": create_location_dim,
+    "address_dim": create_location_dim, #I know the name is different but plz don't change it
     "staff_dim": create_staff_dim
 }
