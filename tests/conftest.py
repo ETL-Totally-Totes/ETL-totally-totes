@@ -25,13 +25,15 @@ def aws_credentials():
     os.environ["AWS_SESSION_TOKEN"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "eu-west-2"
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
 def s3_client(aws_credentials):
     """
     Return a mocked S3 client
     """
     with mock_aws():
         yield boto3.client("s3", region_name="eu-west-2")
+
 
 @pytest.fixture(scope="function")
 # @mock_aws
@@ -41,7 +43,7 @@ def s3_with_bucket(s3_client):
     Args:
         s3_client: mocked s3 client
 
-    """    
+    """
     s3_client.create_bucket(
         Bucket=BUCKET,
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
@@ -53,6 +55,7 @@ def s3_with_bucket(s3_client):
 # DB SEEDING AND RUNNING
 ##########################
 
+
 @pytest.fixture(autouse=True, scope="module")
 def seed_database():
     # env = ".env"
@@ -61,9 +64,11 @@ def seed_database():
     except Exception as e:
         print(e)
 
+
 ##########################
 # MOCKS AND PATCHES
 ##########################
+
 
 @pytest.fixture()
 def mock_get_state_true():
@@ -71,11 +76,10 @@ def mock_get_state_true():
 
     Yields:
         mock: mock with return value of success response expected
-    """   
+    """
     with patch("src.extract.get_state") as mock:
         mock.return_value = True
         yield mock
-
 
 
 @pytest.fixture()
@@ -84,10 +88,11 @@ def mock_get_state_false():
 
     Yields:
         mock: mock with return value of success response expected
-    """   
+    """
     with patch("src.extract.get_state") as mock:
         mock.return_value = False
         yield mock
+
 
 @pytest.fixture()
 def mock_change_state():
@@ -95,7 +100,7 @@ def mock_change_state():
 
     Yields:
         mock: mock with return value of success response expected
-    """   
+    """
     with patch("src.extract.change_state") as mock:
         mock.return_value = None
         yield mock
@@ -107,10 +112,8 @@ def mock_connection():
 
     Yields:
         mock: mock with return value of success response expected
-    """   
+    """
     with patch("src.extract.create_connection") as mock:
         new_conn = create_connection_to_local()
         mock.return_value = new_conn
         yield mock.return_value
-
-
