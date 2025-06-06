@@ -135,6 +135,84 @@ data "aws_iam_policy_document" "sqs_queue_policy" {
 # state machine
 # -----------------
 
+# Create an IAM role for the Step Functions state machine
+
+resource "aws_iam_role" "StateMachineRole" {
+  name               = var.extract_lambda_name
+  assume_role_policy = data.aws_iam_policy_document.state_machine_assume_role_policy.json
+}
+
+data "aws_iam_policy_document" "state_machine_assume_role_policy" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["states.amazonaws.com"]
+    }
+
+    actions = [
+      "sts:AssumeRole",
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "state_machine_role_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogGroups"
+    ]
+
+    resources = ["${aws_cloudwatch_log_group.MySFNLogGroup.arn}:*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "cloudwatch:PutMetricData",
+      "logs:CreateLogDelivery",
+      "logs:GetLogDelivery",
+      "logs:UpdateLogDelivery",
+      "logs:DeleteLogDelivery",
+      "logs:ListLogDeliveries",
+      "logs:PutResourcePolicy",
+      "logs:DescribeResourcePolicies",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "lambda:InvokeFunction"
+    ]
+
+    resources = ["${aws_lambda_function.extract_handler.arn}"]
+  }
+
+}
+
+# Create an IAM policy for the Step Functions state machine
+resource "aws_iam_role_policy" "StateMachinePolicy" {
+  role   = aws_iam_role.StateMachineRole.id
+  policy = data.aws_iam_policy_document.state_machine_role_policy.json
+}
+
+# Create a Log group for the state machine
+resource "aws_cloudwatch_log_group" "MySFNLogGroup" {
+  name_prefix       = "/aws/vendedlogs/states/MyStateMachine-"
+  retention_in_days = 1
+  #kms_key_id        = aws_kms_key.log_group_key.arn
+}
+
+
+
+#CODE BELOW IS FROM SAFFI FROM A FEW DAYS AGO
 # data "aws_iam_policy_document" "state_policy" {
 #   statement {
 #     effect = "Allow"
