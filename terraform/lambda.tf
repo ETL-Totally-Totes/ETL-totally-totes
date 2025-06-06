@@ -70,3 +70,36 @@ resource "aws_lambda_function" "extract_handler" {
     }
   }
 }
+
+
+# ------------------------------
+# Tranform lambda tf code
+# ------------------------------
+
+data "archive_file" "transform_lambda" {
+  type             = "zip"
+  output_file_mode = "0666"
+  source_file      = "${path.module}/../src/transform.py"
+  output_path      = "${path.module}/../transform_function.zip"
+}
+#SHARING LAYERS AND ROLE WITH EXTRACT LAMBDA
+resource "aws_lambda_function" "transform_handler" {
+  function_name = var.transform_lambda_name
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "transform.transform_handler"
+  s3_bucket = aws_s3_bucket.code_bucket.id
+  s3_key = "transform_function.zip"
+
+  source_code_hash = data.archive_file.transform_lambda.output_base64sha256
+  timeout = 120 #TO CHANGE IF NEEDED
+
+  runtime = var.python_runtime
+  layers = [aws_lambda_layer_version.etl_layer.arn, 
+            aws_lambda_layer_version.utils.arn]
+            
+  environment {
+    variables = {
+      BUCKET = var.transformation_bucket_name
+    }
+  }
+}
