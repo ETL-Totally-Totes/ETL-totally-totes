@@ -39,3 +39,16 @@ resource "aws_s3_object" "utils" {
   source = "${path.module}/../util_layer.zip"
   etag   = filemd5("${path.module}/../util_layer.zip")
 }
+
+# ------------------------------
+# Tranform lambda tf code
+# ------------------------------
+
+resource "aws_s3_bucket" "transformation_bucket" {
+  bucket = var.transformation_bucket_name
+  force_destroy = true
+  tags = {
+    Name        = "Data transformed"
+    Environment = "prod" #both functions are in the same enviroment?
+  }
+}
