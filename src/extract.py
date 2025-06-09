@@ -152,12 +152,12 @@ def extract_handler(event, context):
     except Exception as e:
         logger.error({"message": "unknown error occured", "details": e})
 
-    else:
+    # else:
+    finally:
         if current_state is True:
             change_state(
                 boto3.client("s3"), False
             )  # Once first run is ending, change 'is first run' status to False.
-    finally:
         close_connection(db)
 
 

@@ -35,7 +35,7 @@ resource "aws_lambda_layer_version" "etl_layer" {
   compatible_runtimes = [var.python_runtime]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "layer.zip"
-  #depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
 }
 
 resource "aws_lambda_layer_version" "extract_extras_layer" {
@@ -43,7 +43,7 @@ resource "aws_lambda_layer_version" "extract_extras_layer" {
   compatible_runtimes = [var.python_runtime]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "extract_extras_layer.zip"
-  #depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.extract_extras_layer]#, null_resource.set_up_zips ]
 }
 
 resource "aws_lambda_layer_version" "transform_extras_layer" {
@@ -51,7 +51,7 @@ resource "aws_lambda_layer_version" "transform_extras_layer" {
   compatible_runtimes = [var.python_runtime]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "transform_extras_layer.zip"
-  #depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.transform_extras_layer]#, null_resource.set_up_zips ]
 }
 
 resource "aws_lambda_layer_version" "utils" {

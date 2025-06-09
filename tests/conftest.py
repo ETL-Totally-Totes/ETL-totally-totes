@@ -215,9 +215,11 @@ def mock_get_csv_file_keys_v2():
 
 @pytest.fixture()
 def mock_read_csv_to_df(test_df):
+    result = {"2025/06/05/design.csv": test_df}
     with patch("src.transform.read_csv_to_df") as mock:
-        mock.return_value = {"2025/06/05/design.csv": test_df}
-        yield mock
+        for k, v in result.items():
+            mock.return_value = {k:v} 
+            yield mock
 
 @pytest.fixture()
 def mock_read_csv_to_df_v2(test_address_df, test_counterparty_df):

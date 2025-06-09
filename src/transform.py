@@ -167,35 +167,36 @@ def transform_handler(event, context):
     try:
         keys = get_csv_file_keys(logs)
         if keys:
-            dfs = read_csv_to_df(keys)
+            dfs = read_csv_to_df(keys, s3_client)
             address, department = None, None # These are dataframes
             # print(keys)
             for key in keys:
                 new_df = None
+                curr_df = next(dfs)
                 prefix = key[11:15]
                 if prefix == "sale":
-                    df = dfs[key]
+                    df = curr_df[key]
                     new_df = facts_and_dim["sales_fact"](df)
                 elif prefix == "addr":
-                    df = dfs[key]
+                    df = curr_df[key]
                     address = df
                     new_df = facts_and_dim["address_dim"](address)
                 elif prefix == "coun":
-                    df = dfs[key]
+                    df = curr_df[key]
                     new_df:pd.DataFrame = facts_and_dim["counterparty_dim"](df, address)
                     # Legal_Address_id is still included. Need to look into dropping that column
                 
                 elif prefix == "curr":
-                    df = dfs[key]
+                    df = curr_df[key]
                     new_df = facts_and_dim["currency_dim"](df)
                 elif prefix == "depa":
-                    df = dfs[key]
+                    df = curr_df[key]
                     department = df
                 elif prefix == "desi":
-                    df = dfs[key]
+                    df = curr_df[key]
                     new_df = facts_and_dim["design_dim"](df)
                 elif prefix == "staf":
-                    df = dfs[key]
+                    df = curr_df[key]
                     new_df = facts_and_dim["staff_dim"](df, department)
                 else:
                     current_state = get_state(s3_client)
