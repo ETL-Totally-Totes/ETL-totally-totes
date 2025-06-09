@@ -63,12 +63,25 @@ data "aws_iam_policy_document" "cw_document" {
       ]
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
   }
+  statement {
+    #this statement should give permission to the transform lambda describe Log Streams and groups in the extract lambda
+    effect = "Allow"
+    actions = [
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+    resources = [ "${aws_lambda_function.extract_handler.arn}:*" ]
+  }
 }
+
+
 # Create
 resource "aws_iam_policy" "cw_policy" {
   #TODO: use the policy document defined above
   policy      = data.aws_iam_policy_document.cw_document.json
 }
+
+
 # Attach
 resource "aws_iam_role_policy_attachment" "lambda_cw_policy_attachment" {
   #TODO: attach the cw policy to the lambda role
