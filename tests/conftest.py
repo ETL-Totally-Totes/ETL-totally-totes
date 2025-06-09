@@ -159,6 +159,41 @@ def test_df():
     yield test_df
 
 
+@pytest.fixture()
+def test_address_df():
+    test_dict = {
+        "address_id": [15],
+        "address_line_1": ["N/A"],
+        "address_line_2": ["N/A"],
+        "district": ["N/A"],
+        "city": ["N/A"],
+        "postal_code": ["N/A"],
+        "country": ["N/A"],
+        "phone": ["N/A"],
+        "created_at": ["2025-06-04"],
+        "last_updated": ["2025-06-06"],
+    }
+    test_df = pd.DataFrame.from_dict(test_dict)
+    test_df.set_index("address_id", inplace=True)
+    yield test_df
+
+
+@pytest.fixture()
+def test_counterparty_df():
+    test_dict = {
+        "counterparty_id": [1],
+        "counterparty_legal_name":["Person"],
+        "legal_address_id": [15],
+        "commercial_contact": ["Person1"],
+        "delivery_contact": ["Person2"],
+        "created_at": ["2025-06-04"],
+        "last_updated": ["2025-06-06"],
+    }
+    test_df = pd.DataFrame.from_dict(test_dict)
+    test_df.set_index("counterparty_id", inplace=True)
+    yield test_df
+
+
 
 @pytest.fixture()
 def mock_get_logs():
@@ -173,10 +208,29 @@ def mock_get_csv_file_keys():
         yield mock
 
 @pytest.fixture()
+def mock_get_csv_file_keys_v2():
+    with patch("src.transform.get_csv_file_keys") as mock:
+        mock.return_value = ["2025/06/05/address.csv", "2025/06/05/counterparty.csv"]
+        yield mock
+
+@pytest.fixture()
 def mock_read_csv_to_df(test_df):
     with patch("src.transform.read_csv_to_df") as mock:
         mock.return_value = {"2025/06/05/design.csv": test_df}
         yield mock
+
+@pytest.fixture()
+def mock_read_csv_to_df_v2(test_address_df, test_counterparty_df):
+    with patch("src.transform.read_csv_to_df") as mock:
+        mock.return_value = {"2025/06/05/address.csv": test_address_df,
+                             "2025/06/05/counterparty.csv": test_counterparty_df}
+        yield mock
+
+
+
+##########################
+# REGULAR FIXTURES
+##########################
 
 @pytest.fixture()
 def logs_no_changes():
