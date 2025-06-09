@@ -35,7 +35,23 @@ resource "aws_lambda_layer_version" "etl_layer" {
   compatible_runtimes = [var.python_runtime]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "layer.zip"
-  depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
+  #depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
+}
+
+resource "aws_lambda_layer_version" "extract_extras_layer" {
+  layer_name          = "extract_extras_layer"
+  compatible_runtimes = [var.python_runtime]
+  s3_bucket = aws_s3_bucket.code_bucket.id
+  s3_key = "extract_extras_layer.zip"
+  #depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
+}
+
+resource "aws_lambda_layer_version" "transform_extras_layer" {
+  layer_name          = "transform_extras_layer"
+  compatible_runtimes = [var.python_runtime]
+  s3_bucket = aws_s3_bucket.code_bucket.id
+  s3_key = "transform_extras_layer.zip"
+  #depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
 }
 
 resource "aws_lambda_layer_version" "utils" {
@@ -56,9 +72,10 @@ resource "aws_lambda_function" "extract_handler" {
   source_code_hash = data.archive_file.extract_lambda.output_base64sha256
   timeout = 120
 
-  runtime = "python3.13"
+  runtime = var.python_runtime
   layers = [aws_lambda_layer_version.etl_layer.arn, 
-            aws_lambda_layer_version.utils.arn]
+            aws_lambda_layer_version.utils.arn,
+            aws_lambda_layer_version.extract_extras_layer.arn]
             
   environment {
     variables = {
@@ -96,10 +113,13 @@ resource "aws_lambda_function" "transform_handler" {
   runtime = var.python_runtime
   layers = [aws_lambda_layer_version.etl_layer.arn, 
             aws_lambda_layer_version.utils.arn]
+            #aws_lambda_layer_version.transform_extras_layer.arn]
             
   environment {
     variables = {
-      BUCKET = var.transformation_bucket_name
+      BUCKET = var.ingestion_bucket_name
+      TRANSFORM_BUCKET = var.transform_lambda_name
+
     }
   }
 }
