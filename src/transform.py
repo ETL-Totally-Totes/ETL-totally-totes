@@ -164,14 +164,13 @@ def transform_handler(event, context):
         context (JSON | dict): contains information about this lambda 
     """    
     logs = get_logs(log_client, log_group_name=event["log_group_name"])
-    keys = get_csv_file_keys(logs)
     try:
+        keys = get_csv_file_keys(logs)
         if keys:
             dfs = read_csv_to_df(keys)
             address, department = None, None # These are dataframes
-            print(keys)
+            # print(keys)
             for key in keys:
-                print(key)
                 new_df = None
                 prefix = key[11:15]
                 if prefix == "sale":
@@ -183,7 +182,9 @@ def transform_handler(event, context):
                     new_df = facts_and_dim["address_dim"](address)
                 elif prefix == "coun":
                     df = dfs[key]
-                    new_df = facts_and_dim["counterparty_dim"](df, address)
+                    new_df:pd.DataFrame = facts_and_dim["counterparty_dim"](df, address)
+                    # Legal_Address_id is still included. Need to look into dropping that column
+                
                 elif prefix == "curr":
                     df = dfs[key]
                     new_df = facts_and_dim["currency_dim"](df)
