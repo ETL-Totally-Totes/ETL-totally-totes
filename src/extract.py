@@ -18,7 +18,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-BUCKET = os.environ['BUCKET']
+BUCKET = os.environ["BUCKET"]
 STATUS_KEY = "status_check.json"
 
 def get_state(s3_client):
