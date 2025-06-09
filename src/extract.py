@@ -12,14 +12,14 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-
+  
+  
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-BUCKET = os.environ['BUCKET']
+BUCKET = os.environ["BUCKET"]
 STATUS_KEY = "status_check.json"
-
 
 def get_state(s3_client):
     """
@@ -115,7 +115,8 @@ def extract_handler(event, context):
                 year = datetime.datetime.now(datetime.UTC).strftime("%Y")
                 month = datetime.datetime.now(datetime.UTC).strftime("%m")
                 day = datetime.datetime.now(datetime.UTC).strftime("%d")
-                csv_file_name_key = f"{year}/{month}/{day}/{table}_{datetime.datetime.now(datetime.UTC)}.csv"
+                current_time = datetime.datetime.now(datetime.UTC)
+                csv_file_name_key = f"{year}/{month}/{day}/{table}_{current_time}.csv"
                 s3 = boto3.client("s3")
                 s3.put_object(
                     Bucket=BUCKET, Key=csv_file_name_key, Body=csv_buffer.getvalue()
@@ -123,10 +124,13 @@ def extract_handler(event, context):
                 #  There might be an issue, when migrating on first run could consume a lot of memory.
                 # This is not for MVP its for later when we might have millions of rows to migrate to OLAP
 
-                csv_file_name = (f"s3://{BUCKET}/{table}_{datetime.datetime.now(datetime.UTC)}.csv")
+                csv_file_name = (f"s3://{BUCKET}/{table}_{current_time}.csv")
                 logger.info(f"Data exported to '{csv_file_name}' successfully.")
             else:
                 logger.info(f"No data changes in the table {table}")
+        return {
+            "log_group_name": context.log_group_name   # <- Needs testing
+        }
 
     except ClientError as e:
         logger.error(
