@@ -1,3 +1,4 @@
+from pprint import pprint
 import pandas as pd
 import boto3
 from dotenv import load_dotenv
@@ -91,20 +92,22 @@ def create_counterparty_dim(df_counterparty, df_address):
         inplace=True,
     )
     df = df_counterparty.merge(df_address, left_on="legal_address_id", right_index=True)
-    df.drop(["created_at", "last_updated"], axis="columns", inplace=True)
+    # df.drop(["created_at", "last_updated"], axis="columns", inplace=True)
+    # df.drop("legal_address_id", inplace=True)
     df.rename(
         columns={
-            "legal_address_id": "counterparty_legal_address_id",
-            "address_line_1": "counterparty_address_line_1",
-            "address_line_2": "counterparty_address_line_2",
-            "district": "counterparty_district",
-            "city": "counterparty_city",
+            # "legal_address_id": "counterparty_legal_address_id",
+            "address_line_1": "counterparty_legal_address_line_1",
+            "address_line_2": "counterparty_legal_address_line_2",
+            "district": "counterparty_legal_district",
+            "city": "counterparty_legal_city",
             "postal_code": "counterparty_postal_code",
-            "country": "counterparty_country",
-            "phone": "counterparty_phone",
+            "country": "counterparty_legal_country",
+            "phone": "counterparty_legal_phone_number",
         },
         inplace=True,
     )
+    
     return df
 
 
