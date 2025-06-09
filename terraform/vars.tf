@@ -31,3 +31,8 @@ variable "transform_lambda_name" {
   type    = string
   default = "transform_handler"
 }
+
+variable "state_machine_name" {
+  type    = string
+  default = "etl-totally-totes-workflow"
+}
