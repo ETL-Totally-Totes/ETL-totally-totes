@@ -53,6 +53,8 @@ jobs:
           PG_DATABASE: ${{ secrets.PG_DATABASE }}
           PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
           PG_HOST: ${{ secrets.PG_HOST }}
+          BUCKET: ${{ secrets.BUCKET }}
+          TRANSFORM_BUCKET: ${{ secrets.TRANSFORM_BUCKET }}
           TEST_PG_DATABASE: postgres
           TEST_PG_PASSWORD: postgres
           TEST_PG_USERNAME: postgres
