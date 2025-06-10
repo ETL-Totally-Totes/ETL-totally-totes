@@ -11,9 +11,10 @@ from src.utils.connection import create_connection, close_connection
 from dotenv import load_dotenv
 import os
 
+
+
 load_dotenv()
-  
-  
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -107,26 +108,50 @@ def extract_handler(event, context):
 
             db_cursor.execute(query)
 
-            data_frame = pd.DataFrame.from_records(db_cursor.fetchall())
+            # data_frame = pd.DataFrame.from_records(db_cursor.fetchall())
 
-            if data_frame.shape[0]:
-                csv_buffer = io.StringIO()
-                data_frame.to_csv(csv_buffer, index=False)
+            # if data_frame.shape[0]:
+                # csv_buffer = io.StringIO()
+                # data_frame.to_csv(csv_buffer, index=False)
+                # year = datetime.datetime.now(datetime.UTC).strftime("%Y")
+                # month = datetime.datetime.now(datetime.UTC).strftime("%m")
+                # day = datetime.datetime.now(datetime.UTC).strftime("%d")
+                # current_time = datetime.datetime.now(datetime.UTC)
+                # csv_file_name_key = f"{year}/{month}/{day}/{table}_{current_time}.csv"
+                # s3 = boto3.client("s3")
+                # s3.put_object(
+                #     Bucket=BUCKET, Key=csv_file_name_key, Body=csv_buffer.getvalue()
+                # )
+                #  There might be an issue, when migrating on first run could consume a lot of memory.
+                # This is not for MVP its for later when we might have millions of rows to migrate to OLAP
+            try:
+                current_time = datetime.datetime.now(datetime.UTC)
+                csv_path = "/tmp/new_file.csv"
+                batch_size = 1000
+                first_batch = True
+                while True:
+                    rows = db_cursor.fetchmany(batch_size)
+                    if not rows:
+                        break
+                    df_batch = pd.DataFrame.from_records(rows, columns=[desc[0] for desc in db_cursor.description])
+                    if first_batch:
+                        df_batch.to_csv(csv_path, mode='w', index=False)
+                        first_batch = False
+                    else:
+                        df_batch.to_csv(csv_path, mode='a', index=False, header=False)
                 year = datetime.datetime.now(datetime.UTC).strftime("%Y")
                 month = datetime.datetime.now(datetime.UTC).strftime("%m")
                 day = datetime.datetime.now(datetime.UTC).strftime("%d")
                 current_time = datetime.datetime.now(datetime.UTC)
                 csv_file_name_key = f"{year}/{month}/{day}/{table}_{current_time}.csv"
+                csv_file_name = f"s3://{BUCKET}/{table}_{current_time}.csv"
+                # data_frame.to_csv(csv_file, index=False)
                 s3 = boto3.client("s3")
-                s3.put_object(
-                    Bucket=BUCKET, Key=csv_file_name_key, Body=csv_buffer.getvalue()
-                )
-                #  There might be an issue, when migrating on first run could consume a lot of memory.
-                # This is not for MVP its for later when we might have millions of rows to migrate to OLAP
-
-                csv_file_name = (f"s3://{BUCKET}/{table}_{current_time}.csv")
+                s3.upload_file(csv_path, BUCKET, csv_file_name_key)
+                os.remove(csv_path)
                 logger.info(f"Data exported to '{csv_file_name}' successfully.")
-            else:
+
+            except Exception as e:
                 logger.info(f"No data changes in the table {table}")
         return {
             "log_group_name": context.log_group_name   # <- Needs testing
