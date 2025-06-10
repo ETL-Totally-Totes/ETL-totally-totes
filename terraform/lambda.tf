@@ -5,34 +5,9 @@ data "archive_file" "extract_lambda" {
   output_path      = "${path.module}/../extract_function.zip"
 }
 
-# resource "null_resource" "set_up_zips" {
-#     provisioner "local-exec" {
-#       command = <<EOT
-#         cd ../
-#         echo "Cleaning up..."
-#         rm -rf python 
-#         rm -rf util_layer.zip
-#         rm -rf layer.zip
-
-#         echo "Creating dependencies"
-#         pip install -r requirements.txt --platform manylinux2014_x86_64 --only-binary=:all: -t python/
-#         zip -r layer.zip python/
-
-#         rm -rf python 
-
-#         echo "Creating utils"
-#         mkdir python
-#         cp -r src python
-#         zip -r util_layer.zip python
-#         cd terraform
-#       EOT
-#     }
-# }
-
-
 resource "aws_lambda_layer_version" "etl_layer" {
   layer_name          = "etl_layer"
-  compatible_runtimes = [var.python_runtime]
+  compatible_runtimes = [var.python_runtime, "python3.13"]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "layer.zip"
   depends_on = [ aws_s3_object.layer]#, null_resource.set_up_zips ]
@@ -40,26 +15,19 @@ resource "aws_lambda_layer_version" "etl_layer" {
 
 resource "aws_lambda_layer_version" "extract_extras_layer" {
   layer_name          = "extract_extras_layer"
-  compatible_runtimes = [var.python_runtime]
+  compatible_runtimes = ["python3.12", "python3.13"]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "extract_extras_layer.zip"
-  depends_on = [ aws_s3_object.extract_extras_layer]#, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.extract_extras_layer]
 }
 
-resource "aws_lambda_layer_version" "transform_extras_layer" {
-  layer_name          = "transform_extras_layer"
-  compatible_runtimes = [var.python_runtime]
-  s3_bucket = aws_s3_bucket.code_bucket.id
-  s3_key = "transform_extras_layer.zip"
-  depends_on = [ aws_s3_object.transform_extras_layer]#, null_resource.set_up_zips ]
-}
 
 resource "aws_lambda_layer_version" "utils" {
   layer_name          = "utils"
-  compatible_runtimes = [var.python_runtime]
+  compatible_runtimes = [var.python_runtime, "python3.13"]
   s3_bucket = aws_s3_bucket.code_bucket.id
   s3_key = "utils.zip"
-  depends_on = [ aws_s3_object.utils]#, null_resource.set_up_zips ]
+  depends_on = [ aws_s3_object.utils]
 }
 
 resource "aws_lambda_function" "extract_handler" {
@@ -70,12 +38,13 @@ resource "aws_lambda_function" "extract_handler" {
   s3_key = "extract_function.zip"
 
   source_code_hash = data.archive_file.extract_lambda.output_base64sha256
-  timeout = 120
+  timeout = 720
 
-  runtime = var.python_runtime
+  runtime = "python3.13" #do not change runtime. For some reason this is the only one compatible with psycopg2
   layers = [aws_lambda_layer_version.etl_layer.arn, 
             aws_lambda_layer_version.utils.arn,
-            aws_lambda_layer_version.extract_extras_layer.arn]
+            aws_lambda_layer_version.extract_extras_layer.arn,
+            "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python313:2"]
             
   environment {
     variables = {
@@ -108,17 +77,18 @@ resource "aws_lambda_function" "transform_handler" {
   s3_key = "transform_function.zip"
 
   source_code_hash = data.archive_file.transform_lambda.output_base64sha256
-  timeout = 120 #TO CHANGE IF NEEDED
+  timeout = 240 #TO CHANGE IF NEEDED
 
   runtime = var.python_runtime
   layers = [aws_lambda_layer_version.etl_layer.arn, 
-            aws_lambda_layer_version.utils.arn]
-            #aws_lambda_layer_version.transform_extras_layer.arn]
+            aws_lambda_layer_version.utils.arn,
+            "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python312:17"]
+
             
   environment {
     variables = {
       BUCKET = var.ingestion_bucket_name
-      TRANSFORM_BUCKET = var.transform_lambda_name
+      TRANSFORM_BUCKET = var.transformation_bucket_name
 
     }
   }
