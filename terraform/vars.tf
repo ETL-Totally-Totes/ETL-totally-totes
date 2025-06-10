@@ -15,7 +15,7 @@ variable "extract_lambda_name" {
 
 variable "python_runtime" {
   type    = string
-  default = "python3.13"
+  default = "python3.12"
 }
 
 # ------------------------------
