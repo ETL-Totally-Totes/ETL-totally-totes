@@ -27,7 +27,8 @@ data "aws_iam_policy_document" "s3_data_policy_doc" {
     actions = [
       "s3:Put*", "s3:Get*", "s3:List*" #TODO: ADD MORE - 2/6 added more actions
     ]
-    resources = [aws_s3_bucket.ingestion_bucket.arn, "${aws_s3_bucket.ingestion_bucket.arn}/*"
+    resources = [aws_s3_bucket.ingestion_bucket.arn, "${aws_s3_bucket.ingestion_bucket.arn}/*",
+      aws_s3_bucket.transformation_bucket.arn, "${aws_s3_bucket.transformation_bucket.arn}/*"
     ]
   }
 } #TODO: ADD MORE BUCKETS WHEN WE CREATE THEM
@@ -73,11 +74,6 @@ data "aws_iam_policy_document" "cw_document" {
     ]
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${aws_lambda_function.extract_handler.function_name}:*"]
   }
-}
-
-
-output "lambda_name" {
-  value = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${aws_lambda_function.extract_handler.function_name}:*"
 }
 
 
@@ -176,12 +172,52 @@ data "aws_iam_policy_document" "state_machine_role_policy" {
   statement {
     effect = "Allow"
     actions = [
+      "cloudwatch:PutMetricData",
+      "logs:CreateLogDelivery",
+      "logs:GetLogDelivery",
+      "logs:UpdateLogDelivery",
+      "logs:DeleteLogDelivery",
+      "logs:ListLogDeliveries",
+      "logs:PutResourcePolicy",
+      "logs:DescribeResourcePolicies",
+      "logs:PutLogEvents",
+      "logs:CreateLogStream",
+      "logs:DescribeLogGroups"
+    ]
+    resources = ["*"]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+    # "logs:CreateLogGroup",
+    "logs:CreateLogStream",
+    "logs:PutLogEvents",
+    "logs:DescribeLogGroups",
+    "logs:DescribeLogStreams",
+    ]
+    resources = [aws_cloudwatch_log_group.etl_totally_totes_workflow_logs.arn]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
       "lambda:InvokeFunction"
     ]
-    resources = ["${aws_lambda_function.extract_handler.arn}:*"]
+    resources = [ 
+      "${aws_lambda_function.extract_handler.arn}",
+      "${aws_lambda_function.transform_handler.arn}"
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "lambda:InvokeFunction"
+    ]
+    resources = [
+      "${aws_lambda_function.extract_handler.arn}:*",
+      "${aws_lambda_function.transform_handler.arn}:*"
+    ]
   }
 }
-
 
 resource "aws_iam_policy" "state_machine_role_policy" {
   name   = "state_machine_role_policy"
@@ -189,7 +225,7 @@ resource "aws_iam_policy" "state_machine_role_policy" {
 }
 # Attach
 resource "aws_iam_role_policy_attachment" "state_machine_attachment" {
-  role       = aws_iam_role.lambda_role.name #TODO: attach the s3 write policy to the lambda role
+  role       = aws_iam_role.state_role.name #TODO: attach the s3 write policy to the lambda role
   policy_arn = aws_iam_policy.state_machine_role_policy.arn
 }
 
