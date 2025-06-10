@@ -30,7 +30,7 @@ def create_connection_to_local():
             password=os.getenv("TEST_PG_PASSWORD"),
             # host=os.getenv("TEST_PG_HOST"),
             port=int(os.getenv("TEST_PG_PORT")),
-            cursor_factory=RealDictCursor
+            cursor_factory=psycopg2.extras.RealDictCursor
         )
     return db
 
