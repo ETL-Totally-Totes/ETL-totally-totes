@@ -25,7 +25,7 @@ set-pythonpath:
 	export PYTHONPATH=$(PYTHONPATH)
 ## Build the environment requirements
 requirements: create-environment
-	source venv/bin/activate && pip install -r requirements.txt requirements-dev.txt
+	source venv/bin/activate && pip install -r requirements.txt -r requirements-dev.txt
 
 ################################################################################################################
 # Set Up
