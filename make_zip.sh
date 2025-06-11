@@ -16,6 +16,10 @@ pip install psycopg2-binary==2.9.9 --platform manylinux2014_x86_64 --only-binary
 zip -r extract_extras_layer.zip python
 rm -rf python
 
+pip install SQLAlchemy==2.0.41 --platform manylinux2014_x86_64 --only-binary=:all: -t python/
+zip -r load_extras_layer.zip python
+rm -rf python
+
 echo "Creating utils"
 mkdir python
 cp -r src python

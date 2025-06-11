@@ -21,6 +21,14 @@ resource "aws_lambda_layer_version" "extract_extras_layer" {
   depends_on = [ aws_s3_object.extract_extras_layer]
 }
 
+resource "aws_lambda_layer_version" "load_extras_layer" {
+  layer_name          = "load_extras_layer"
+  compatible_runtimes = ["python3.12", "python3.13"]
+  s3_bucket = aws_s3_bucket.code_bucket.id
+  s3_key = "load_extras_layer.zip"
+  depends_on = [ aws_s3_object.load_extras_layer]
+}
+
 
 resource "aws_lambda_layer_version" "utils" {
   layer_name          = "utils"
@@ -90,6 +98,45 @@ resource "aws_lambda_function" "transform_handler" {
       BUCKET = var.ingestion_bucket_name
       TRANSFORM_BUCKET = var.transformation_bucket_name
 
+    }
+  }
+}
+
+
+# ------------------------------
+# Tranform lambda tf code
+# ------------------------------
+
+data "archive_file" "load_lambda" {
+  type             = "zip"
+  output_file_mode = "0666"
+  source_file      = "${path.module}/../src/load.py"
+  output_path      = "${path.module}/../load_function.zip"
+}
+#SHARING LAYERS AND ROLE WITH EXTRACT LAMBDA
+resource "aws_lambda_function" "load_handler" {
+  function_name = var.load_lambda_name
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "load.load_handler"
+  s3_bucket = aws_s3_bucket.code_bucket.id
+  s3_key = "load_function.zip"
+
+  source_code_hash = data.archive_file.transform_lambda.output_base64sha256
+  timeout = 300 #TO CHANGE IF NEEDED
+
+  runtime = "python3.13"
+  layers = [aws_lambda_layer_version.etl_layer.arn, 
+            aws_lambda_layer_version.utils.arn,
+            aws_lambda_layer_version.load_extras_layer.arn,
+            aws_lambda_layer_version.extract_extras_layer.arn,
+            "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python313:2"
+            ]
+
+            
+  environment {
+    variables = {
+      TRANSFORM_BUCKET = var.transformation_bucket_name
+      PG_CONNECTION=jsondecode(data.aws_secretsmanager_secret_version.warehouse_secret.secret_string)["PG_CONNECTION"],
     }
   }
 }

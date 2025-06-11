@@ -40,6 +40,14 @@ resource "aws_s3_object" "extract_extras_layer" {
   etag   = filemd5("${path.module}/../extract_extras_layer.zip")
 }
 
+resource "aws_s3_object" "load_extras_layer" {
+  depends_on = [ aws_s3_bucket.code_bucket ]
+  bucket = var.code_bucket_name
+  key    = "load_extras_layer.zip"
+  source = "${path.module}/../load_extras_layer.zip"
+  etag   = filemd5("${path.module}/../load_extras_layer.zip")
+}
+
 
 resource "aws_s3_object" "utils" {
   depends_on = [ aws_s3_bucket.code_bucket ]
@@ -68,4 +76,12 @@ resource "aws_s3_object" "transform_function" {
   key    = "transform_function.zip"
   source = "${path.module}/../transform_function.zip"
   etag   = filemd5(data.archive_file.transform_lambda.output_path)
+}
+
+resource "aws_s3_object" "load_function" {
+  depends_on = [ aws_s3_bucket.code_bucket ]
+  bucket = var.code_bucket_name
+  key    = "load_function.zip"
+  source = "${path.module}/../load_function.zip"
+  etag   = filemd5(data.archive_file.load_lambda.output_path)
 }

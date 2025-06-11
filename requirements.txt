@@ -3,3 +3,4 @@ psycopg2-binary
 pandas
 pyarrow
 pg8000
+SQLAlchemy

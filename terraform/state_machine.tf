@@ -10,8 +10,8 @@ resource "aws_sfn_state_machine" "etl_totally_totes_workflow" {
   type     = "STANDARD"
   definition = templatefile("${path.module}/state-machine.asl.json", {
     extract_arn = aws_lambda_function.extract_handler.arn,
-    transform_arn = aws_lambda_function.transform_handler.arn
-    # load_arn = aws_lambda_function.load_handler.arn,
+    transform_arn = aws_lambda_function.transform_handler.arn,
+    load_arn = aws_lambda_function.load_handler.arn
     }
   )
 
