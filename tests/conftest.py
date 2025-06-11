@@ -70,7 +70,7 @@ def s3_with_transform_bucket(s3_client):
 @pytest.fixture(scope="function")
 def log_client(aws_credentials):
     with mock_aws():
-        log_client = boto3.client("logs")
+        log_client = boto3.client("logs", region_name="eu-west-2")
         yield log_client
 
 

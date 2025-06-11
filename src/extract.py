@@ -142,7 +142,7 @@ def extract_handler(event, context):
                 year = datetime.datetime.now(datetime.UTC).strftime("%Y")
                 month = datetime.datetime.now(datetime.UTC).strftime("%m")
                 day = datetime.datetime.now(datetime.UTC).strftime("%d")
-                current_time = datetime.datetime.now(datetime.UTC)
+                # current_time = datetime.datetime.now(datetime.UTC)
                 csv_file_name_key = f"{year}/{month}/{day}/{table}_{current_time}.csv"
                 csv_file_name = f"s3://{BUCKET}/{table}_{current_time}.csv"
                 # data_frame.to_csv(csv_file, index=False)
