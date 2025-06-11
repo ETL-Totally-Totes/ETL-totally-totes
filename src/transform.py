@@ -21,8 +21,8 @@ my_config = Config(
     region_name = 'eu-west-2'
 )
 
-log_client = boto3.client("logs", my_config)
-s3_client = boto3.client("s3", my_config)
+log_client = boto3.client("logs", config=my_config)
+s3_client = boto3.client("s3", config=my_config)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
