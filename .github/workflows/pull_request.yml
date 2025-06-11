@@ -47,9 +47,9 @@ jobs:
           TEST_PG_USERNAME: postgres
           TEST_PG_PORT: 5432
         run: |
+          make requirements
           PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -f ./tests/test_db/setup_dbs.sql
           python ./tests/test_db/test_db_utils.py
-          make requirements
           make dev-setup
           make run-checks
 
