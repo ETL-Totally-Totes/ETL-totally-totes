@@ -1,4 +1,4 @@
-# ETL-totally-totes
+# Terrific Totes ETL Pipeline
 
 <details>
 <summary>Table of Contents</summary>
