@@ -1,9 +1,6 @@
 import logging
-from pprint import pprint
 from unittest.mock import patch
-import pandas as pd
 import pytest
-from moto import mock_aws
 from src.transform import (
     transform_handler,
     get_csv_file_keys,
@@ -14,6 +11,7 @@ from src.transform import (
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 @pytest.mark.skip
 class TestGetLogs:
@@ -83,11 +81,10 @@ class TestTransformHandler:
         mock_get_csv_file_keys,
         mock_read_csv_to_df,
     ):
-        # patch get_logs and get_csv_file_keys to return NOne. This might not be necessary
-        # patch read_csv_to_df and create a new df for that return value
+
         transform_handler({"log_group_name": "test_log"}, None)
         response = s3_client.list_objects_v2(Bucket=TRANSFORM_BUCKET)
-        
+
         assert response["Contents"][0]["Key"][-8:] == ".parquet"
         assert response["KeyCount"] == 1
 
@@ -115,13 +112,14 @@ class TestTransformHandler:
         s3_with_transform_bucket,
         mock_get_logs,
         mock_get_csv_file_keys_v2,
-        mock_read_csv_to_df_v2
+        mock_read_csv_to_df_v2,
     ):
 
         transform_handler({"log_group_name": "test_log"}, None)
 
-
-        with patch("src.transform.get_csv_file_keys") as mock_keys, patch("src.transform.read_csv_to_df") as mock_csv_to_df:
+        with patch("src.transform.get_csv_file_keys") as mock_keys, patch(
+            "src.transform.read_csv_to_df"
+        ) as mock_csv_to_df:
             mock_keys.return_value = ["2025/06/05/design.csv"]
 
             transform_handler({"log_group_name": "test_log"}, None)
@@ -132,9 +130,7 @@ class TestTransformHandler:
                 assert file["Key"][-8:] == ".parquet"
 
     # @pytest.mark.xfail
-    def test_subsequent_runs_no_changes(
-        self, caplog, mock_get_logs
-    ):
+    def test_subsequent_runs_no_changes(self, caplog, mock_get_logs):
         # "function logs that there were no changes for an empty keys list"
         # Should log this information
         with patch("src.transform.get_csv_file_keys") as mock_keys:

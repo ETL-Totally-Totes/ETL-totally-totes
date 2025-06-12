@@ -2,17 +2,13 @@ import io
 import json
 import logging
 import datetime
-from pprint import pprint
 import time
 import pandas as pd
 import pytest
-from moto import mock_aws
-from psycopg2.errors import ConnectionException, OperationalError
 from botocore.exceptions import ClientError
-from unittest.mock import Mock, patch
 
 from src.extract import extract_handler, BUCKET
-from src.utils.connection import create_connection_to_local, pg8000_connect_to_local
+from src.utils.connection import pg8000_connect_to_local
 
 # BEFORE RUNNING, RUN:
 #    setup_dbs.sql

@@ -1,11 +1,9 @@
-from pprint import pprint
 import pandas as pd
-import boto3
-from dotenv import load_dotenv
 import os
 import logging
 from io import BytesIO
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv
 
 load_dotenv()
 BUCKET = os.environ["BUCKET"]
@@ -15,11 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 def read_csv_to_df(key_list, s3_client, origin_bucket=BUCKET):
-    """This function reads .csv files from the s3 bucket and transforms them to panda datasets
-    so that we can run queries on the data
-    Args: list of strings (keys)
+    """
+    Reads CSV files from S3 and converts each into a Pandas DataFrame.
 
-    Return: pd DataFrame
+    Args:
+        key_list (list): List of S3 object keys (file paths).
+        s3_client (boto3.client): An active boto3 S3 client.
+        origin_bucket (str): Name of the S3 bucket to read from (default is BUCKET from .env).
+
+    Yields:
+        dict: A dictionary with the key name and the corresponding DataFrame.
     """
 
     if not key_list:
@@ -41,23 +44,31 @@ def read_csv_to_df(key_list, s3_client, origin_bucket=BUCKET):
 
 
 def df_to_parquet(df):
+    """
+    Converts a DataFrame to a Parquet file in memory.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to convert.
+
+    Returns:
+        buffer_value (bytes): A byte string representing the Parquet data.
+    """
     buffer = BytesIO()
     df.to_parquet(buffer)
-    # buffer.getvalue() should retrieve whole value without having to reset position
-    # but if not (in next funct) add buffer.seek(0)
     buffer_value = buffer.getvalue()  # takes value from the buffer as byte object
     return buffer_value
 
 
-# we can use index=False inside df.to_parquet(buffer) if we don't want to preserve df indices?
-# TODO:check with team
-# TODO:add pyarrow to requirements? needed 'pip install pyarrow' to test
-# if we need to need to read byte object- BytesIO(buffer_value)
-# s3_client.put_object(Bucket=origin_bucket, Key=key, Body=buffer_value)
-# ^^needs key, bucket and client as args
-
-
 def create_sales_fact(df):
+    """
+    Prepares the sales fact table by extracting date and time from datetime columns.
+
+    Args:
+        df (pd.DataFrame): Raw sales data as panda dataframe.
+
+    Returns:
+        pd.DataFrame: Transformed DataFrame with split datetime columns.
+    """
     df["created_date"] = pd.to_datetime(df["created_at"]).dt.date
     df["created_time"] = pd.to_datetime(df["created_at"]).dt.time
     df.drop(["created_at"], axis="columns", inplace=True)
@@ -68,23 +79,58 @@ def create_sales_fact(df):
 
 
 def create_location_dim(df):
+    """
+    Prepares the data for location dimension table.
+
+    Args:
+        df (pd.DataFrame): Raw address data.
+
+    Returns:
+        pd.DataFrame: Cleaned DataFrame with appropriate index set.
+    """
     df.drop(["created_at", "last_updated"], axis="columns", inplace=True)
     df.rename_axis("location_id", inplace=True)
     return df
 
 
 def create_design_dim(df):
+    """
+    Prepares the data for design dimensions table.
+
+    Args:
+        df (pd.DataFrame): Raw design data.
+
+    Returns:
+        pd.DataFrame: Cleaned design data.
+    """
     df.drop(["created_at", "last_updated"], axis="columns", inplace=True)
     return df
 
 
 def create_currency_dim(df):
+    """
+    Prepares the currency dimension and adds readable currency names
+
+    Args: df (pd.DataFrame): Raw currency data
+
+    Returns: pd.Dataframe: Cleaned and enriched currency data
+    """
     df.drop(["created_at", "last_updated"], axis="columns", inplace=True)
     df["currency_name"] = ["Great British Pounds", "US Dollars", "Euros"]
     return df
 
 
 def create_counterparty_dim(df_counterparty, df_address):
+    """
+    Merges counterparty and address data into a single dataframe.
+
+    Args:
+        df_counterparty (pd.DataFrame): Raw counterparty data.
+        df_address (pd.DataFrame): Cleaned location data.
+
+    Returns:
+        pd.DataFrame: Combined counterparty datafame.
+    """
     # This will need the original address dataframe so assign that to a variable outside the for loop once you have it
     df_counterparty.drop(
         ["commercial_contact", "delivery_contact", "created_at", "last_updated"],
@@ -107,12 +153,21 @@ def create_counterparty_dim(df_counterparty, df_address):
         },
         inplace=True,
     )
-    
+
     return df
 
 
 def create_staff_dim(df_staff, df_department):
-    # This will need the original department dataframe so assign that to a variable outside the for loop once you have it
+    """
+    Joins staff and department data to build data for the staff dimension.
+
+    Args:
+        df_staff (pd.DataFrame): Raw staff data.
+        df_department (pd.DataFrame): Cleaned department data.
+
+    Returns:
+        pd.DataFrame: Staff data with department info merged in.
+    """
     df_staff.drop(["created_at", "last_updated"], axis="columns", inplace=True)
     df_department.drop(
         ["manager", "created_at", "last_updated"], axis="columns", inplace=True
@@ -123,6 +178,12 @@ def create_staff_dim(df_staff, df_department):
 
 
 def create_date_dim():
+    """
+    Creates a static date dimension covering Nov 2022 to Dec 2025.
+
+    Returns:
+        pd.DataFrame: Date dimension with fields for year, month, weekday, etc.
+    """
     dates = pd.date_range("2022-11-01", "2025-12-31")
     df = pd.DataFrame(
         {

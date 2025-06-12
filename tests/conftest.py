@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import psycopg2
 import pytest
 from psycopg2.extras import RealDictCursor
 
@@ -19,7 +18,9 @@ from src.utils.connection import create_connection_to_local
 
 @pytest.fixture(scope="function")
 def aws_credentials():
-    """Mocked AWS Credentials for moto."""
+    """
+    Mocked AWS Credentials for moto.
+    """
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
     os.environ["AWS_SECURITY_TOKEN"] = "testing"
@@ -69,6 +70,9 @@ def s3_with_transform_bucket(s3_client):
 
 @pytest.fixture(scope="function")
 def log_client(aws_credentials):
+    """
+    Creates and yields a mocked CloudWatch Logs client using moto.
+    """
     with mock_aws():
         log_client = boto3.client("logs", region_name="eu-west-2")
         yield log_client
@@ -81,6 +85,9 @@ def log_client(aws_credentials):
 
 @pytest.fixture(autouse=True, scope="module")
 def seed_database():
+    """
+    Seeds the test database with initial data before tests are run.
+    """
     # env = ".env"
     try:
         seed_db()
@@ -95,10 +102,11 @@ def seed_database():
 
 @pytest.fixture()
 def mock_get_state_true():
-    """Mocks the response from the delete_object_from_bucket aws util
+    """
+    Mocks the response from the delete_object_from_bucket aws util to always return True.
 
     Yields:
-        mock: mock with return value of success response expected
+        Mock: mock with return value of success response expected
     """
     with patch("src.extract.get_state") as mock:
         mock.return_value = True
@@ -107,10 +115,11 @@ def mock_get_state_true():
 
 @pytest.fixture()
 def mock_get_state_false():
-    """Mocks the response from the delete_object_from_bucket aws util
+    """
+    Mocks the response from the delete_object_from_bucket aws util to always return False
 
     Yields:
-        mock: mock with return value of success response expected
+        Mock: mock with return value of failure response expected
     """
     with patch("src.extract.get_state") as mock:
         mock.return_value = False
@@ -144,6 +153,11 @@ def mock_connection():
 
 @pytest.fixture()
 def test_df():
+    """
+    Provides a test DataFrame for generic testing purposes.
+
+    The DataFrame simulates a typical structured dataset.
+    """
     test_dict = {
         "index": [1],
         "created_at": ["2025-06-04"],
@@ -157,6 +171,9 @@ def test_df():
 
 @pytest.fixture()
 def test_address_df():
+    """
+    Returns a test DataFrame structured like an address table.
+    """
     test_dict = {
         "address_id": [15],
         "address_line_1": ["N/A"],
@@ -176,6 +193,10 @@ def test_address_df():
 
 @pytest.fixture()
 def test_counterparty_df():
+    """
+    Returns a test DataFrame structured like a counterparty table.
+    """
+
     test_dict = {
         "counterparty_id": [1],
         "counterparty_legal_name": ["Person"],
@@ -192,6 +213,9 @@ def test_counterparty_df():
 
 @pytest.fixture()
 def mock_get_logs():
+    """
+    Mocks 'get_logs' to return None.
+    """
     with patch("src.transform.get_logs") as mock:
         mock.return_value = None
         yield mock
@@ -199,6 +223,9 @@ def mock_get_logs():
 
 @pytest.fixture()
 def mock_get_csv_file_keys():
+    """
+    Mocks 'get_csv_file_keys' to return one design CSV key.
+    """
     with patch("src.transform.get_csv_file_keys") as mock:
         mock.return_value = ["2025/06/05/design.csv"]
         yield mock
@@ -206,6 +233,9 @@ def mock_get_csv_file_keys():
 
 @pytest.fixture()
 def mock_get_csv_file_keys_v2():
+    """
+    Mocks `get_csv_file_keys` to return address and counterparty CSV keys.
+    """
     with patch("src.transform.get_csv_file_keys") as mock:
         mock.return_value = ["2025/06/05/address.csv", "2025/06/05/counterparty.csv"]
         yield mock
@@ -213,6 +243,10 @@ def mock_get_csv_file_keys_v2():
 
 @pytest.fixture()
 def mock_read_csv_to_df(test_df):
+    """
+    Mocks `read_csv_to_df` to return one record containing a design DataFrame.
+    """
+
     result = {"2025/06/05/design.csv": test_df}
     with patch("src.transform.read_csv_to_df") as mock:
         mock.side_effect = lambda *args, **kwargs: iter([result])
@@ -221,6 +255,9 @@ def mock_read_csv_to_df(test_df):
 
 @pytest.fixture()
 def mock_read_csv_to_df_v2(test_address_df, test_counterparty_df, test_df):
+    """
+    Mocks `read_csv_to_df` to return multiple DataFrames by table type.
+    """
     result = [
         {"2025/06/05/address.csv": test_address_df},
         {"2025/06/05/counterparty.csv": test_counterparty_df},
@@ -238,6 +275,10 @@ def mock_read_csv_to_df_v2(test_address_df, test_counterparty_df, test_df):
 
 @pytest.fixture()
 def logs_no_changes():
+    """
+    Returns a list of logs indicating no data changes.
+    """
+
     return [
         "INIT_START Runtime Version: python:3.13.v43\tRuntime Version ARN: "
         "arn:aws:lambda:eu-west-2::runtime:df8faab1a4e36a929b5b10ecff95891dfa72d84ddc1402efb6a66f373fa0c7af\n",
@@ -273,6 +314,9 @@ def logs_no_changes():
 
 @pytest.fixture()
 def logs_with_changes():
+    """
+    Returns a list of logs with a few data exports present.
+    """
     return [
         "INIT_START Runtime Version: python:3.13.v43\tRuntime Version ARN: "
         "arn:aws:lambda:eu-west-2::runtime:df8faab1a4e36a929b5b10ecff95891dfa72d84ddc1402efb6a66f373fa0c7af\n",

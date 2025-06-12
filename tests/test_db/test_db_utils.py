@@ -3,7 +3,6 @@ from decimal import Decimal
 import json
 from datetime import datetime
 from src.utils.connection import pg8000_connect_to_oltp, close_connection
-from pprint import pprint
 
 
 def convert_datetime(obj):
@@ -17,12 +16,14 @@ def convert_datetime(obj):
         return float(obj)  # or str(obj) if you prefer
     return obj
 
+
 def format_response(columns, data, label):
     if len(data) > 1:
         formatted_data = [dict(zip(columns, row)) for row in data]
     else:
         formatted_data = dict(zip(columns, data[0]))
     return {label: formatted_data}
+
 
 def extract_tables():
     table_list = [
@@ -39,7 +40,7 @@ def extract_tables():
         "transaction",
     ]
     conn = pg8000_connect_to_oltp()
-    
+
     for table in table_list:
         query = f"""
         SELECT * FROM {identifier(table)}
@@ -53,5 +54,6 @@ def extract_tables():
         with open(f"tests/test_db/data/{table}.json", "w") as write_file:
             json.dump(converted_response, write_file, indent=4, default=str)
     close_connection(conn)
-    
+
+
 extract_tables()

@@ -17,9 +17,7 @@ EXTRACT_BUCKET = os.environ["BUCKET"]
 TRANSFORM_BUCKET = os.environ["TRANSFORM_BUCKET"]
 STATUS_KEY = "transform_status_check.json"
 
-my_config = Config(
-    region_name = 'eu-west-2'
-)
+my_config = Config(region_name="eu-west-2")
 
 log_client = boto3.client("logs", config=my_config)
 s3_client = boto3.client("s3", config=my_config)
@@ -40,14 +38,15 @@ table_list = [
 
 
 def get_logs(log_client: boto3.client, log_group_name: str) -> list[str]:
-    """Function to extract logs
+    """
+    Fetches the 15 most recent log events from the latest stream in the given CloudWatch log group.
 
     Args:
-        log_client (boto3 client): log client
-        log_group_name: str
+        log_client (boto3.client): Boto3 CloudWatch Logs client.
+        log_group_name (str): Name of the CloudWatch log group to query.
 
     Returns:
-        list[str]: List of raw log messages
+        list[str]: Raw log messages (last 15 entries from latest stream).
     """
     logs = []
     try:
@@ -60,9 +59,7 @@ def get_logs(log_client: boto3.client, log_group_name: str) -> list[str]:
         log_stream = describe_stream_response["logStreams"][0]["logStreamName"]
 
         log_event_response = log_client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream,
-            startFromHead=True
+            logGroupName=log_group_name, logStreamName=log_stream, startFromHead=True
         )
         logs = [record["message"] for record in log_event_response["events"][-15:]]
     except ClientError as e:
@@ -78,13 +75,17 @@ def get_logs(log_client: boto3.client, log_group_name: str) -> list[str]:
 
 
 def get_csv_file_keys(logs: list[str]) -> list[str]:
-    """Gets CSV file keys from get_logs function return value.
+    """
+    Parses log messages from get_logs to construct S3 keys for CSV uploads.
+
+    Filters logs for successful export events, then reconstructs the full S3 object keys
+    based on timestamp and table name.
 
     Args:
-        logs (list[str]): Raw logs
+        logs (list[str]): Raw logs from get_logs function.
 
     Returns:
-        list[str]: List of file S3 keys
+        list[str]: List of s3 keys for CSV files.
     """
     file_keys = []
     try:
@@ -112,16 +113,22 @@ def get_csv_file_keys(logs: list[str]) -> list[str]:
     finally:
         return file_keys
 
+
 def get_state(s3_client):
     """
-        Gets the current state of the switch file and returns it.
-        If it is doesn't exist, it means it is the first run and the file does not exist so it is then created.
+    Gets the current state of the switch file and returns it to check whether this is the first time the data pipeline is being run.
+    If the file doesn't exist, it creates one and assumes this is the first run.
+
+    Note: this function is specific to the Transform Lambda.
+
     Args:
-        s3_client (boto3 client): s3 client
+        s3_client (boto3.client): An S3 client used to access the status file.
+
 
     Returns:
-        bool: status of the run
-    """    
+        bool: True if this is the first run of the pipeline, False if it's a regular repeat run.
+
+    """
     try:
         response = s3_client.get_object(Bucket=TRANSFORM_BUCKET, Key=STATUS_KEY)
         data = json.loads(response["Body"].read().decode("utf-8"))
@@ -137,16 +144,20 @@ def get_state(s3_client):
 
 
 def change_state(s3_client, status: bool):
-    """Changes the state of the switch file. 
+    """
+    Changes the state (bool) of the switch file stored in s3.
        It is changed after the first run only.
-       Any subsequent changes will be done manually incase of any data loss.
+       The file can be manually changed if needed later, if there is a case of data loss.
+
+    Note: this function is specific to the Transform Lambda.
 
     Args:
-        s3_client (boto3 client): s3 client
-        status (bool): status to be applied to the first run
+        s3_client (boto3.client): An S3 client used to update the status file.
+        status (bool): The new state value to set (True = first run, False = normal run).
+
     Raises:
-        TypeError: Only arguments of type bool accepted
-    """    
+        TypeError: If 'status' is not a boolean.
+    """
     if isinstance(status, bool):
         try:
             s3_client.put_object(
@@ -162,14 +173,23 @@ def change_state(s3_client, status: bool):
 
 def transform_handler(event, context):
     """
-    Reads logs from the latest log stream from the extract lambda to get the most recent CSV file keys.
-    Transform the OLTP data changes to a parquet file.
-    Loads parquet files in to 'processed' S3 bucket.
+    Main Lambda handler for the transform phase of the pipeline.
+
+    - Reads logs from the latest log stream from the extract lambda.
+    - Extracts CSV S3 keys from those logs.
+    - Reads CSVs from S3 and applies transformations.
+    - Writes transformed DataFrames as Parquet files to the 'processed' S3 bucket.
 
     Args:
-        event (JSON | dict): returned data from the extract lambda. 
-        context (JSON | dict): contains information about this lambda 
-    """    
+        event (dict): returned data from the extract lambda (expects 'log_group_name' key).
+        context (object):  Lambda context object (locally- pass None).
+
+    Returns:
+        dict: {
+            "s3_keys": List of written Parquet file keys,
+            "table_names": Corresponding table names
+        }
+    """
     logs = get_logs(log_client, log_group_name=event["log_group_name"])
     try:
         keys = get_csv_file_keys(logs)
@@ -178,7 +198,7 @@ def transform_handler(event, context):
         current_state = get_state(s3_client)
 
         dfs = read_csv_to_df(keys, s3_client)
-        address, department = None, None # These are dataframes
+        address, department = None, None  # These are dataframes
         for key in keys:
             new_df = None
             curr_df = next(dfs)
@@ -195,10 +215,10 @@ def transform_handler(event, context):
 
             elif prefix == "coun":
                 df = curr_df[key]
-                new_df:pd.DataFrame = facts_and_dim["counterparty_dim"](df, address)
+                new_df: pd.DataFrame = facts_and_dim["counterparty_dim"](df, address)
                 # Legal_Address_id is still included. Need to look into dropping that column
                 table_name.append("dim_counterparty")
-            
+
             elif prefix == "curr":
                 df = curr_df[key]
                 new_df = facts_and_dim["currency_dim"](df)
@@ -218,16 +238,13 @@ def transform_handler(event, context):
                 new_df = facts_and_dim["staff_dim"](df, department)
                 table_name.append("dim_staff")
 
-
             df_buffer = df_to_parquet(new_df)
             current_time = datetime.datetime.now(datetime.UTC)
             year = current_time.strftime("%Y")
             month = current_time.strftime("%m")
             day = current_time.strftime("%d")
 
-            parquet_file_key = (
-                f"{year}/{month}/{day}/{prefix}_{current_time}.parquet"
-            )
+            parquet_file_key = f"{year}/{month}/{day}/{prefix}_{current_time}.parquet"
             parquet_keys.append(parquet_file_key)
             s3_client.put_object(
                 Bucket=TRANSFORM_BUCKET, Key=parquet_file_key, Body=df_buffer
@@ -265,9 +282,7 @@ def transform_handler(event, context):
             month = current_time.strftime("%m")
             day = current_time.strftime("%d")
 
-            parquet_file_key = (
-                f"{year}/{month}/{day}/date_dim_{current_time}.parquet"
-            )
+            parquet_file_key = f"{year}/{month}/{day}/date_dim_{current_time}.parquet"
             parquet_keys.append(parquet_file_key)
             table_name.append("dim_date")
 
@@ -277,8 +292,7 @@ def transform_handler(event, context):
 
             logger.info(f"Data exported to '{parquet_file_key}' successfully.")
             change_state(s3_client, False)
-        return {"s3_keys": parquet_keys,
-                "table_names": table_name}
+        return {"s3_keys": parquet_keys, "table_names": table_name}
 
 
 if __name__ == "__main__":
@@ -287,8 +301,3 @@ if __name__ == "__main__":
     df = read_csv_to_df(file_keys)
     next = next(df)
     pprint(next)
-    # sales_fact = create_sales_fact(next)
-    # pprint(sales_fact)
-    # for k, v in df.items():
-    #     print(k)
-    #     print(v)

@@ -1,6 +1,5 @@
 import json
 import pytest
-from moto import mock_aws
 from src.extract import get_state, change_state, BUCKET, STATUS_KEY
 
 

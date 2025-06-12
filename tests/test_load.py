@@ -5,9 +5,13 @@ from io import BytesIO
 from moto import mock_aws
 from unittest.mock import patch, MagicMock
 import logging
-import botocore.exceptions
 from sqlalchemy.exc import SQLAlchemyError
-from src.load import read_parquet_from_s3, write_dataframe_to_postgres, ReadParquetError, WriteDataFrameError
+from src.load import (
+    read_parquet_from_s3,
+    write_dataframe_to_postgres,
+    ReadParquetError,
+    WriteDataFrameError,
+)
 
 
 @mock_aws
@@ -71,10 +75,6 @@ class TestReadParquetFromS3:
 
         assert "ClientError while accessing S3:" in caplog.text
         assert "The specified key does not exist." in caplog.text
-        
-
-
-######################################################################################
 
 
 class TestWriteDataframeToPostgresUtil:
@@ -160,9 +160,7 @@ class TestWriteDataframeToPostgresUtil:
             mock_connection = MagicMock()
             mock_engine.begin.return_value.__enter__.return_value = mock_connection
 
-            mock_to_sql.side_effect = Exception(
-                "Unexpected internal server error"
-            )
+            mock_to_sql.side_effect = Exception("Unexpected internal server error")
 
             with pytest.raises(WriteDataFrameError) as e:
                 write_dataframe_to_postgres(sample_dataframe, table_name)
@@ -170,7 +168,7 @@ class TestWriteDataframeToPostgresUtil:
             assert (
                 f"Unexpected error while writing DataFrame to PostgreSQL table '{table_name}': Unexpected internal server error"
                 in caplog.text
-            ) 
+            )
             assert e.type is WriteDataFrameError
 
     def test_write_dataframe_to_postgres_empty_df_warning(self, caplog):
