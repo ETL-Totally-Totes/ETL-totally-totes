@@ -16,7 +16,28 @@
 </details>
 
 ## About The Project
-An ETL pipeline that draws recently updated data in from an OLTP to an OLAP.
+This is an end-to-end ETL pipeline for a tote bag business.
+
+It pulls data from their database into a data warehouse for future analysis. 
+
+In this projet, three lambda applications were created using and psycopg2 and boto3. They were deployed in the AWS cloud storage services s3 using terraform and github actions CI/CD. 
+
+![image](https://github.com/user-attachments/assets/449de78f-f422-4bc3-8dd5-023e70faabc3)
+
+**Lambda 1**
+This lambda function handles the extraction. It connects to the database using psycopg2, runs on a schedule, monitors for changes, and pushes data into an s3 bucket in csv format.
+
+It logs to cloudwatch and sends out failure alerts via email.
+
+**Lambda 2**
+The transformation step cleans and reshapes the data into predefined schemas for warehousing. It uses pandas and boto3 and stores the cleaned output as parquet files into a separate s3 bucket.
+
+It logs to cloudwatch and sends out failure alerts via email.
+
+**Lambda 3**
+The load lambda takes the processed data from the last s3 bucket and loads it into the data warehouse for future analysis.
+
+It logs to cloudwatch and sends out failure alerts via email.
 
 
 ### Built With
@@ -195,5 +216,5 @@ Patricia Selva Plaza Rojas - [selva.pla.roj@gmail.com](mailto:selva.pla.roj@gmai
 
 
 ## Acknowledgements
-We are grateful to Northcoders (ATTACH GITHUB) for this o
+We are grateful to [Northcoders](https://www.northcoders.com/) for their constant guidance and support throughout the bootcamp and during the development of this project.
 
