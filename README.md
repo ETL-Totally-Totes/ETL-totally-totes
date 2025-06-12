@@ -48,6 +48,7 @@ It logs to cloudwatch and sends out failure alerts via email.
 - Terraform
 - PostgreSQL
 - SQLAlchemy
+- Psychopg2
 
 ## Getting Started
 To get a local copy of this pipeline up and running, make sure all the prerequisites are met.
