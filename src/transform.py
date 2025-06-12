@@ -4,6 +4,7 @@ import os
 import json
 from pprint import pprint
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 import pandas as pd
 from dotenv import load_dotenv
@@ -16,10 +17,15 @@ EXTRACT_BUCKET = os.environ["BUCKET"]
 TRANSFORM_BUCKET = os.environ["TRANSFORM_BUCKET"]
 STATUS_KEY = "transform_status_check.json"
 
-log_client = boto3.client("logs")
-s3_client = boto3.client("s3")
+my_config = Config(
+    region_name = 'eu-west-2'
+)
 
-logger = logging.getLogger(__name__)
+log_client = boto3.client("logs", config=my_config)
+s3_client = boto3.client("s3", config=my_config)
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 table_list = [
@@ -56,8 +62,9 @@ def get_logs(log_client: boto3.client, log_group_name: str) -> list[str]:
         log_event_response = log_client.get_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream,
+            startFromHead=True
         )
-        logs = [record["message"] for record in log_event_response["events"]]
+        logs = [record["message"] for record in log_event_response["events"][-15:]]
     except ClientError as e:
         logger.error(
             {
@@ -166,64 +173,73 @@ def transform_handler(event, context):
     logs = get_logs(log_client, log_group_name=event["log_group_name"])
     try:
         keys = get_csv_file_keys(logs)
-        if keys:
-            dfs = read_csv_to_df(keys)
-            address, department = None, None # These are dataframes
-            # print(keys)
-            for key in keys:
-                new_df = None
-                prefix = key[11:15]
-                if prefix == "sale":
-                    df = dfs[key]
-                    new_df = facts_and_dim["sales_fact"](df)
-                elif prefix == "addr":
-                    df = dfs[key]
-                    address = df
-                    new_df = facts_and_dim["address_dim"](address)
-                elif prefix == "coun":
-                    df = dfs[key]
-                    new_df:pd.DataFrame = facts_and_dim["counterparty_dim"](df, address)
-                    # Legal_Address_id is still included. Need to look into dropping that column
-                
-                elif prefix == "curr":
-                    df = dfs[key]
-                    new_df = facts_and_dim["currency_dim"](df)
-                elif prefix == "depa":
-                    df = dfs[key]
-                    department = df
-                elif prefix == "desi":
-                    df = dfs[key]
-                    new_df = facts_and_dim["design_dim"](df)
-                elif prefix == "staf":
-                    df = dfs[key]
-                    new_df = facts_and_dim["staff_dim"](df, department)
-                else:
-                    current_state = get_state(s3_client)
-                    if current_state:
-                        new_df = facts_and_dim["date_dim"]
-                        change_state(s3_client, False)
-                        
-                df_buffer = df_to_parquet(new_df)
-                current_time = datetime.datetime.now(datetime.UTC)
-                year = current_time.strftime("%Y")
-                month = current_time.strftime("%m")
-                day = current_time.strftime("%d")
+        parquet_keys = []
+        table_name = []
+        current_state = get_state(s3_client)
 
-                parquet_file_key = (
-                    f"{year}/{month}/{day}/{prefix}_{current_time}.parquet"
-                )
+        dfs = read_csv_to_df(keys, s3_client)
+        address, department = None, None # These are dataframes
+        for key in keys:
+            new_df = None
+            curr_df = next(dfs)
+            prefix = key[11:15]
+            if prefix == "sale":
+                df = curr_df[key]
+                new_df = facts_and_dim["sales_fact"](df)
+                table_name.append("fact_sales_order")
+            elif prefix == "addr":
+                df = curr_df[key]
+                address = df
+                new_df = facts_and_dim["address_dim"](address)
+                table_name.append("dim_location")
 
-                s3_client.put_object(
-                    Bucket=TRANSFORM_BUCKET, Key=parquet_file_key, Body=df_buffer
-                )
+            elif prefix == "coun":
+                df = curr_df[key]
+                new_df:pd.DataFrame = facts_and_dim["counterparty_dim"](df, address)
+                # Legal_Address_id is still included. Need to look into dropping that column
+                table_name.append("dim_counterparty")
+            
+            elif prefix == "curr":
+                df = curr_df[key]
+                new_df = facts_and_dim["currency_dim"](df)
+                table_name.append("dim_currency")
 
-                logger.info(f"Data exported to '{parquet_file_key}' successfully.")
-            else:
-                logger.error(
-                    {
-                        "message": "no data was exported during this execution",
-                    }
-                )
+            elif prefix == "depa":
+                df = curr_df[key]
+                department = df
+                continue
+            elif prefix == "desi":
+                df = curr_df[key]
+                new_df = facts_and_dim["design_dim"](df)
+                table_name.append("dim_design")
+
+            elif prefix == "staf":
+                df = curr_df[key]
+                new_df = facts_and_dim["staff_dim"](df, department)
+                table_name.append("dim_staff")
+
+
+            df_buffer = df_to_parquet(new_df)
+            current_time = datetime.datetime.now(datetime.UTC)
+            year = current_time.strftime("%Y")
+            month = current_time.strftime("%m")
+            day = current_time.strftime("%d")
+
+            parquet_file_key = (
+                f"{year}/{month}/{day}/{prefix}_{current_time}.parquet"
+            )
+            parquet_keys.append(parquet_file_key)
+            s3_client.put_object(
+                Bucket=TRANSFORM_BUCKET, Key=parquet_file_key, Body=df_buffer
+            )
+
+            logger.info(f"Data exported to {parquet_file_key} successfully.")
+        if not keys:
+            logger.info(
+                {
+                    "message": "no data was exported for any table during this execution",
+                }
+            )
     except ClientError as e:
         logger.error(
             {
@@ -235,11 +251,34 @@ def transform_handler(event, context):
     except IndexError as e:
         logger.error(
             {
-                "message": "no data was exported during this execution",
+                "message": "no data was exported for any table during this execution",
             }
         )
     except Exception as e:
         logger.error({"message": "unknown error occured", "details": e})
+    finally:
+        if current_state:
+            new_df = facts_and_dim["date_dim"]()
+            df_buffer = df_to_parquet(new_df)
+            current_time = datetime.datetime.now(datetime.UTC)
+            year = current_time.strftime("%Y")
+            month = current_time.strftime("%m")
+            day = current_time.strftime("%d")
+
+            parquet_file_key = (
+                f"{year}/{month}/{day}/date_dim_{current_time}.parquet"
+            )
+            parquet_keys.append(parquet_file_key)
+            table_name.append("dim_date")
+
+            s3_client.put_object(
+                Bucket=TRANSFORM_BUCKET, Key=parquet_file_key, Body=df_buffer
+            )
+
+            logger.info(f"Data exported to '{parquet_file_key}' successfully.")
+            change_state(s3_client, False)
+        return {"s3_keys": parquet_keys,
+                "table_names": table_name}
 
 
 if __name__ == "__main__":

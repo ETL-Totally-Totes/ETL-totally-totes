@@ -31,8 +31,12 @@ jobs:
       - name: Install Postgres Client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       
-      # - name: Connect
-      #   run: psql -U postgres -p 5432 -h hostname
+      # - name: Populate Database For Testing
+      #   run: |
+      #     # psql -U postgres -p 5432 -h hostname
+      #     psql -f ../tests/test_db/data/setup_dbs.sql
+      #     python tests/test_db/test_db_utils.py
+          
 
   run-tests:
     name: run-tests

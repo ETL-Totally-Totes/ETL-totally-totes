@@ -36,7 +36,6 @@ def s3_client(aws_credentials):
         yield boto3.client("s3", region_name="eu-west-2")
 
 
-
 @pytest.fixture(scope="function")
 # @mock_aws
 def s3_with_bucket(s3_client):
@@ -64,21 +63,20 @@ def s3_with_transform_bucket(s3_client):
     s3_client.create_bucket(
         Bucket=TRANSFORM_BUCKET,
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
-    )   
+    )
     yield s3_client
 
 
 @pytest.fixture(scope="function")
 def log_client(aws_credentials):
     with mock_aws():
-        log_client = boto3.client("logs")
+        log_client = boto3.client("logs", region_name="eu-west-2")
         yield log_client
 
 
 ##########################
 # DB SEEDING AND RUNNING
 ##########################
-
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -90,11 +88,9 @@ def seed_database():
         print(e)
 
 
-
 ##########################
 # MOCKS AND PATCHES
 ##########################
-
 
 
 @pytest.fixture()
@@ -121,7 +117,6 @@ def mock_get_state_false():
         yield mock
 
 
-
 @pytest.fixture()
 def mock_change_state():
     """Mocks the response from the delete_object_from_bucket aws util
@@ -145,6 +140,7 @@ def mock_connection():
         new_conn = create_connection_to_local()
         mock.return_value = new_conn
         yield mock.return_value
+
 
 @pytest.fixture()
 def test_df():
@@ -182,7 +178,7 @@ def test_address_df():
 def test_counterparty_df():
     test_dict = {
         "counterparty_id": [1],
-        "counterparty_legal_name":["Person"],
+        "counterparty_legal_name": ["Person"],
         "legal_address_id": [15],
         "commercial_contact": ["Person1"],
         "delivery_contact": ["Person2"],
@@ -194,12 +190,12 @@ def test_counterparty_df():
     yield test_df
 
 
-
 @pytest.fixture()
 def mock_get_logs():
     with patch("src.transform.get_logs") as mock:
         mock.return_value = None
         yield mock
+
 
 @pytest.fixture()
 def mock_get_csv_file_keys():
@@ -207,30 +203,38 @@ def mock_get_csv_file_keys():
         mock.return_value = ["2025/06/05/design.csv"]
         yield mock
 
+
 @pytest.fixture()
 def mock_get_csv_file_keys_v2():
     with patch("src.transform.get_csv_file_keys") as mock:
         mock.return_value = ["2025/06/05/address.csv", "2025/06/05/counterparty.csv"]
         yield mock
 
+
 @pytest.fixture()
 def mock_read_csv_to_df(test_df):
+    result = {"2025/06/05/design.csv": test_df}
     with patch("src.transform.read_csv_to_df") as mock:
-        mock.return_value = {"2025/06/05/design.csv": test_df}
+        mock.side_effect = lambda *args, **kwargs: iter([result])
         yield mock
+
 
 @pytest.fixture()
-def mock_read_csv_to_df_v2(test_address_df, test_counterparty_df):
+def mock_read_csv_to_df_v2(test_address_df, test_counterparty_df, test_df):
+    result = [
+        {"2025/06/05/address.csv": test_address_df},
+        {"2025/06/05/counterparty.csv": test_counterparty_df},
+        {"2025/06/05/design.csv": test_df},
+    ]
     with patch("src.transform.read_csv_to_df") as mock:
-        mock.return_value = {"2025/06/05/address.csv": test_address_df,
-                             "2025/06/05/counterparty.csv": test_counterparty_df}
+        mock.side_effect = lambda *args, **kwargs: iter(result)
         yield mock
-
 
 
 ##########################
 # REGULAR FIXTURES
 ##########################
+
 
 @pytest.fixture()
 def logs_no_changes():

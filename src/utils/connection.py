@@ -1,8 +1,10 @@
 import psycopg2 
-from psycopg2.extras import RealDictCursor
+# from psycopg2.extras import RealDictCursor
 from pg8000.native import Connection
 from dotenv import load_dotenv
 import os
+
+import psycopg2.extras
 
 load_dotenv(override=True)
 
@@ -17,7 +19,7 @@ def create_connection():
             user=username,
             password=password,
             host=host,
-            cursor_factory=RealDictCursor
+            cursor_factory=psycopg2.extras.RealDictCursor
         )
     return db
 
@@ -28,7 +30,7 @@ def create_connection_to_local():
             password=os.getenv("TEST_PG_PASSWORD"),
             # host=os.getenv("TEST_PG_HOST"),
             port=int(os.getenv("TEST_PG_PORT")),
-            cursor_factory=RealDictCursor
+            cursor_factory=psycopg2.extras.RealDictCursor
         )
     return db
 
