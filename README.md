@@ -20,7 +20,7 @@ This is an end-to-end ETL pipeline for a tote bag business.
 
 It pulls data from their database into a data warehouse for future analysis. 
 
-In this projet, three lambda applications were created using and psycopg2 and boto3. They were deployed in the AWS cloud storage services s3 using terraform and github actions CI/CD. 
+In this projet, three lambda applications were created using psycopg2 and boto3. They were deployed in the AWS cloud storage services s3 using terraform and github actions CI/CD. 
 
 ![image](https://github.com/user-attachments/assets/449de78f-f422-4bc3-8dd5-023e70faabc3)
 
@@ -32,7 +32,7 @@ It logs to cloudwatch and sends out failure alerts via email.
 
 **Lambda 2**
 
-The transformation step cleans and reshapes the data into predefined schemas for warehousing. It uses pandas and boto3 and stores the cleaned output as parquet files into a separate s3 bucket.
+The transformation step cleans and reshapes the data into predefined schemas for warehousing. It uses pandas and boto3, and stores the cleaned output as parquet files into a separate s3 bucket.
 
 It logs to cloudwatch and sends out failure alerts via email.
 
